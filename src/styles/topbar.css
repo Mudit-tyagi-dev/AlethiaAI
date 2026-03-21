@@ -1,0 +1,79 @@
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  height: 57px;
+  background: transparent;
+  border-bottom: 1px solid var(--card-border);
+  z-index: 100;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.topbar-left, .topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.topbar-right {
+  justify-content: flex-end;
+}
+
+.topbar-center {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  flex: 2;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: 1.2rem;
+  letter-spacing: -0.5px;
+}
+
+.logo-symbol {
+  color: var(--accent-unverifiable);
+  font-size: 1.4rem;
+  animation: pulseGlow 3s infinite;
+}
+
+.tagline {
+  font-size: 0.7rem;
+  color: var(--text-tertiary);
+  font-family: 'JetBrains Mono', monospace;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: var(--input-bg);
+  color: var(--text-secondary);
+  border: 1px solid transparent;
+}
+
+.icon-btn:hover {
+  background: var(--card-bg);
+  border-color: var(--card-border);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-glow);
+  transform: translateY(-1px);
+}
+
+.hamburger-btn {
+  font-size: 1.2rem;
+}

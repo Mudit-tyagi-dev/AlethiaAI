@@ -1,0 +1,120 @@
+.report-card {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+}
+
+[data-theme="light"] .report-card {
+  background: rgba(255, 255, 255, 0.7);
+  box-shadow: 0 8px 32px rgba(100, 80, 200, 0.06);
+}
+
+.report-header {
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--card-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.report-title {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+}
+
+.report-timestamp {
+  font-size: 0.7rem;
+  color: var(--text-tertiary);
+}
+
+.report-dashboard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 20px 24px;
+  flex-wrap: wrap;
+}
+
+/* TruthMeter */
+.truth-meter-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 200px;
+  flex: 1;
+}
+
+.truth-meter-labels {
+  display: flex;
+  justify-content: space-between;
+}
+
+.tm-label-false { font-size: 0.6rem; font-weight: 700; color: var(--accent-false); letter-spacing: 0.5px; }
+.tm-label-true  { font-size: 0.6rem; font-weight: 700; color: var(--accent-true);  letter-spacing: 0.5px; }
+
+.truth-meter-bar {
+  display: flex;
+  gap: 3px;
+}
+
+.tm-segment {
+  flex: 1;
+  height: 10px;
+  border-radius: 3px;
+  transition: background 0.5s ease;
+}
+
+.truth-score-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.truth-score-pct { font-size: 1.8rem; font-weight: 700; line-height: 1; }
+.truth-meter-label { font-size: 0.6rem; font-weight: 600; letter-spacing: 1px; color: var(--text-tertiary); text-transform: uppercase; }
+
+/* KPI */
+.kpi-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.kpi-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  padding: 12px 16px;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 70px;
+}
+
+.kpi-value { font-size: 1.4rem; font-weight: 600; margin-bottom: 3px; }
+.kpi-label { font-size: 0.6rem; color: var(--text-tertiary); text-align: center; }
+
+.kpi-card.true    .kpi-value { color: var(--accent-true); }
+.kpi-card.false   .kpi-value { color: var(--accent-false); }
+.kpi-card.partial .kpi-value { color: var(--accent-partial); }
+.kpi-card.total   .kpi-value { color: var(--text-primary); }
+
+.report-divider { height: 1px; background: var(--card-border); }
+
+.claims-section { padding: 0 24px 24px; }
+
+.claims-list { display: flex; flex-direction: column; }
+
+.report-footer {
+  padding: 12px 20px;
+  border-top: 1px solid var(--card-border);
+  font-size: 0.65rem;
+  color: var(--text-tertiary);
+  text-align: center;
+}
