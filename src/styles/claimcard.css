@@ -51,13 +51,13 @@
   border-radius: 50%;
 }
 
-.pill-true        { color: var(--accent-true);         background: rgba(16,185,129,0.08);  border-color: rgba(16,185,129,0.2); }
+.pill-true        { color: var(--accent-true);         background: rgba(16,185,129,0.08);  border-color: rgba(16,185,129,0.2); animation: greenGlowPulse 4s infinite; }
 .pill-true .verdict-dot              { background: var(--accent-true); }
-.pill-false       { color: var(--accent-false);        background: rgba(239,68,68,0.08);   border-color: rgba(239,68,68,0.2); }
+.pill-false       { color: var(--accent-false);        background: rgba(239,68,68,0.08);   border-color: rgba(239,68,68,0.2); animation: redGlowPulse 4s infinite; }
 .pill-false .verdict-dot             { background: var(--accent-false); }
-.pill-partially-true { color: var(--accent-partial);  background: rgba(234,179,8,0.08);   border-color: rgba(234,179,8,0.2); }
+.pill-partially-true { color: var(--accent-partial);  background: rgba(234,179,8,0.08);   border-color: rgba(234,179,8,0.2); animation: yellowGlowPulse 4s infinite; }
 .pill-partially-true .verdict-dot    { background: var(--accent-partial); }
-.pill-unverifiable   { color: var(--accent-unverifiable); background: rgba(139,92,246,0.08); border-color: rgba(139,92,246,0.2); }
+.pill-unverifiable   { color: var(--accent-unverifiable); background: rgba(139,92,246,0.08); border-color: rgba(139,92,246,0.2); animation: purpleGlowPulse 4s infinite; }
 .pill-unverifiable .verdict-dot      { background: var(--accent-unverifiable); }
 
 .confidence-badge {
@@ -375,8 +375,14 @@
 }
 
 .claim-card-new:hover {
-  border-color: var(--text-tertiary);
+  border-color: rgba(124,92,252,0.4);
+  box-shadow: 0 4px 20px rgba(124,92,252,0.15);
 }
+
+.claim-card-new[data-verdict="True"]:hover { border-color: var(--accent-true); box-shadow: 0 4px 20px rgba(16,185,129,0.15); }
+.claim-card-new[data-verdict="False"]:hover { border-color: var(--accent-false); box-shadow: 0 4px 20px rgba(239,68,68,0.15); }
+.claim-card-new[data-verdict="Partial"]:hover { border-color: var(--accent-partial); box-shadow: 0 4px 20px rgba(234,179,8,0.15); }
+.claim-card-new[data-verdict="Unverifiable"]:hover { border-color: var(--accent-unverifiable); box-shadow: 0 4px 20px rgba(139,92,246,0.15); }
 
 /* Cursor pointer only when verified (clickable) */
 .card-expanded,
@@ -434,16 +440,16 @@
 }
 
 /* Verdict colors — WS values are "True" / "False" / "Partial" / "Unverifiable" */
-.verdict-true        { color: var(--accent-true);          background: rgba(16,185,129,0.08);  border-color: rgba(16,185,129,0.2); }
+.verdict-true        { color: var(--accent-true);          background: rgba(16,185,129,0.08);  border-color: rgba(16,185,129,0.2); animation: greenGlowPulse 4s infinite; }
 .verdict-true .verdict-dot-new         { background: var(--accent-true); }
 
-.verdict-false       { color: var(--accent-false);         background: rgba(239,68,68,0.08);   border-color: rgba(239,68,68,0.2); }
+.verdict-false       { color: var(--accent-false);         background: rgba(239,68,68,0.08);   border-color: rgba(239,68,68,0.2); animation: redGlowPulse 4s infinite; }
 .verdict-false .verdict-dot-new        { background: var(--accent-false); }
 
-.verdict-partial     { color: var(--accent-partial);       background: rgba(234,179,8,0.08);   border-color: rgba(234,179,8,0.2); }
+.verdict-partial     { color: var(--accent-partial);       background: rgba(234,179,8,0.08);   border-color: rgba(234,179,8,0.2); animation: yellowGlowPulse 4s infinite; }
 .verdict-partial .verdict-dot-new      { background: var(--accent-partial); }
 
-.verdict-unverifiable { color: var(--accent-unverifiable); background: rgba(139,92,246,0.08); border-color: rgba(139,92,246,0.2); }
+.verdict-unverifiable { color: var(--accent-unverifiable); background: rgba(139,92,246,0.08); border-color: rgba(139,92,246,0.2); animation: purpleGlowPulse 4s infinite; }
 .verdict-unverifiable .verdict-dot-new { background: var(--accent-unverifiable); }
 
 .verdict-pending     { color: var(--text-tertiary);        background: var(--card-border);     border-color: transparent; }

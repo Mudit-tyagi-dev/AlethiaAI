@@ -1,32 +1,34 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useRef, useCallback } from 'react';
 import TopBar from './components/TopBar';
 import Sidebar from './components/Sidebar';
 import SettingsModal from './components/SettingsModal';
+import PricingModal from './components/PricingModal';
 import ChatThread from './components/Chat/ChatThread';
 import ReportScreen from './components/Report/ReportScreen';
+import useAppStore from './store/useAppStore';
+import { checkHealth, fetchReport } from './services/api';
 
-const WS_URL = 'wss://factify-backend-tcup.onrender.com/ws/verify';
 const FONT_SIZES = { Small: '13px', Medium: '15px', Large: '17px' };
 
 function App() {
-  const [theme, setTheme] = useState('dark');
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [settingsInitialTab, setSettingsInitialTab] = useState('appearance');
-  const [settingsWarning, setSettingsWarning] = useState('');
-  const [chatSessionId, setChatSessionId] = useState(Date.now());
-  const [selectedReport, setSelectedReport] = useState(null);
-  const [sidebarVersion, setSidebarVersion] = useState(0);
+  const theme = useAppStore((s) => s.theme);
+  const setTheme = useAppStore((s) => s.setTheme);
+  const isSettingsOpen = useAppStore((s) => s.isSettingsOpen);
+  const closeSettings = useAppStore((s) => s.closeSettings);
+  const isPricingOpen = useAppStore((s) => s.isPricingOpen);
+  const closePricing = useAppStore((s) => s.closePricing);
 
-  // Report Screen state
-  const [reportScreenData, setReportScreenData] = useState(null); // { reportData, query }
 
-  const wsRef = useRef(null);
-
-  const [fontSize, setFontSize] = useState(() => {
-    return localStorage.getItem('alethia-fontsize') || 'Medium';
-  });
+  const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = React.useState(false);
+  const [settingsInitialTab, setSettingsInitialTab] = React.useState('appearance');
+  const [settingsWarning, setSettingsWarning] = React.useState('');
+  const [backendDown, setBackendDown] = React.useState(false);
+  const [chatSessionId, setChatSessionId] = React.useState(Date.now());
+  const [reportScreenData, setReportScreenData] = React.useState(null);
+  const [fontSize, setFontSize] = React.useState(
+    () => localStorage.getItem('alethia-fontsize') || 'Medium'
+  );
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -38,25 +40,14 @@ function App() {
     localStorage.setItem('alethia-fontsize', fontSize);
   }, [fontSize]);
 
-  // Connect WebSocket once on app mount
-  const connectWS = useCallback(() => {
-    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) return;
-    const ws = new WebSocket(WS_URL);
-    wsRef.current = ws;
+  useEffect(() => {
+    checkHealth().catch(() => setBackendDown(true));
   }, []);
 
-  useEffect(() => {
-    connectWS();
-    return () => {
-      // Do not close on unmount in dev — let ChatThread manage lifecycle
-    };
-  }, [connectWS]);
-
-  const toggleTheme = () => setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+  const toggleTheme = () => setTheme(theme === 'dark' ? 'light' : 'dark');
 
   const handleHomeClick = () => {
     setChatSessionId(Date.now());
-    setSelectedReport(null);
     setReportScreenData(null);
     setIsSidebarOpen(false);
   };
@@ -64,33 +55,32 @@ function App() {
   const openSettingsOnApiTab = useCallback((warning = '') => {
     setSettingsWarning(warning);
     setSettingsInitialTab('api');
-    setIsSettingsOpen(true);
+    useAppStore.getState().openSettings();
   }, []);
 
-  const handleReportSelect = useCallback((report) => {
-    setSelectedReport(report);
-    setChatSessionId(Date.now());
-    setReportScreenData(null);
-    setIsSidebarOpen(false);
-  }, []);
-
-  const handleReportSaved = useCallback(() => {
-    setSidebarVersion(v => v + 1);
-  }, []);
-
-  // Open Report Screen
   const handleViewReport = useCallback((reportData, query) => {
     setReportScreenData({ reportData, query });
   }, []);
 
-  // Back to Chat — preserve chat history (don't reset chatSessionId)
   const handleBackToChat = useCallback(() => {
     setReportScreenData(null);
   }, []);
 
-  // Sidebar report click → open Report Screen directly
-  const handleSidebarReportForScreen = useCallback((report) => {
-    // Build a compatible reportData from saved entry
+  const handleSidebarReportForScreen = useCallback(async (report) => {
+    setIsSidebarOpen(false);
+    const apiKey = useAppStore.getState().apiKey || localStorage.getItem('alethia_api_key') || '';
+    
+    try {
+      if (report.report_id) {
+        const fullReport = await fetchReport(report.report_id, apiKey);
+        fullReport.report_id = fullReport.id;
+        setReportScreenData({ reportData: fullReport, query: fullReport.input_text || report.query || report.title || '' });
+        return;
+      }
+    } catch (err) {
+      console.error('Failed to fetch full report from backend, using local fallback', err);
+    }
+    
     const reportData = {
       report_id: report.report_id,
       overall_score: (report.overall_score || 0) / 100,
@@ -103,63 +93,69 @@ function App() {
       claims: report.claims || [],
     };
     setReportScreenData({ reportData, query: report.query || report.title || '' });
-    setIsSidebarOpen(false);
   }, []);
 
   return (
     <div className="app-shell">
-      {/* Show Report Screen over everything */}
-      {reportScreenData ? (
+      {backendDown && (
+        <div style={{ background: '#ef4444', color: '#fff', textAlign: 'center', padding: '10px', zIndex: 9999, position: 'relative', fontSize: '0.9rem', fontWeight: 500 }}>
+          Backend is currently unavailable. Some features may not work.
+        </div>
+      )}
+      {/* Main Chat View - Hidden when ReportScreen is active to preserve state */}
+      <div style={{ display: reportScreenData ? 'none' : 'contents' }}>
+        <TopBar
+          toggleSidebar={() => setIsSidebarOpen((p) => !p)}
+          theme={theme}
+          toggleTheme={toggleTheme}
+          onHomeClick={handleHomeClick}
+          onNewChat={() => setChatSessionId(Date.now())}
+          reportId={reportScreenData?.reportData?.report_id}
+        />
+
+        <div className="app-body">
+          <Sidebar
+            isOpen={isSidebarOpen}
+            onClose={() => setIsSidebarOpen(false)}
+            onHomeClick={handleHomeClick}
+            isCollapsed={isSidebarCollapsed}
+            onToggleCollapse={() => setIsSidebarCollapsed((p) => !p)}
+            onReportClick={handleSidebarReportForScreen}
+          />
+
+          <main className="app-main">
+            <ChatThread
+              key={chatSessionId}
+              openSettingsOnApiTab={openSettingsOnApiTab}
+              onViewReport={handleViewReport}
+            />
+          </main>
+        </div>
+      </div>
+
+      {/* Report Screen Overlay */}
+      {reportScreenData && (
         <ReportScreen
           reportData={reportScreenData.reportData}
           query={reportScreenData.query}
           onBack={handleBackToChat}
         />
-      ) : (
-        <>
-          <TopBar
-            toggleSidebar={() => setIsSidebarOpen(p => !p)}
-            theme={theme}
-            toggleTheme={toggleTheme}
-          />
+      )}
 
-          <div className="app-body">
-            <Sidebar
-              isOpen={isSidebarOpen}
-              onClose={() => setIsSidebarOpen(false)}
-              openSettings={() => setIsSettingsOpen(true)}
-              onHomeClick={handleHomeClick}
-              isCollapsed={isSidebarCollapsed}
-              onToggleCollapse={() => setIsSidebarCollapsed(p => !p)}
-              onReportClick={handleSidebarReportForScreen}
-              sidebarVersion={sidebarVersion}
-            />
+      {isSettingsOpen && (
+        <SettingsModal
+          onClose={() => { closeSettings(); setSettingsWarning(''); }}
+          theme={theme}
+          toggleTheme={toggleTheme}
+          fontSize={fontSize}
+          setFontSize={setFontSize}
+          initialTab={settingsInitialTab}
+          warningMessage={settingsWarning}
+        />
+      )}
 
-            <main className="app-main">
-              <ChatThread
-                key={chatSessionId}
-                wsRef={wsRef}
-                connectWS={connectWS}
-                openSettingsOnApiTab={openSettingsOnApiTab}
-                selectedReport={selectedReport}
-                onReportSaved={handleReportSaved}
-                onViewReport={handleViewReport}
-              />
-            </main>
-          </div>
-
-          {isSettingsOpen && (
-            <SettingsModal
-              onClose={() => { setIsSettingsOpen(false); setSettingsWarning(''); }}
-              theme={theme}
-              toggleTheme={toggleTheme}
-              fontSize={fontSize}
-              setFontSize={setFontSize}
-              initialTab={settingsInitialTab}
-              warningMessage={settingsWarning}
-            />
-          )}
-        </>
+      {isPricingOpen && (
+        <PricingModal onClose={closePricing} />
       )}
     </div>
   );

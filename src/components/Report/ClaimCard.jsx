@@ -146,6 +146,7 @@ const ClaimCard = ({ claim, index = 0 }) => {
     <article
       className={`claim-card-new slide-in-card ${expanded ? 'card-expanded' : 'card-collapsed'}`}
       style={{ animationDelay: `${index * 80}ms` }}
+      data-verdict={verdict}
       onClick={() => status === 'verified' && setExpanded(p => !p)}
     >
       {/* ── COLLAPSED ROW ── */}

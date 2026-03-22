@@ -1,3 +1,4 @@
+/* ── Sidebar ──────────────────────────────────────────────────────── */
 .sidebar-overlay {
   position: fixed;
   top: 0; left: 0;
@@ -6,7 +7,6 @@
   z-index: 50;
 }
 
-/* Persistent sidebar */
 .sidebar.persistent {
   position: relative;
   height: 100%;
@@ -33,22 +33,12 @@
   min-height: 57px;
 }
 
-.logo {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-family: var(--heading), sans-serif;
-  font-weight: 700;
-  font-size: 1rem;
-  white-space: nowrap;
-}
-
-.logo-symbol { color: var(--text-primary); font-size: 1.1rem; }
 .logo-symbol-only {
   font-size: 1.3rem;
   font-family: var(--heading), sans-serif;
   font-weight: 800;
   margin: 0 auto;
+  color: var(--accent-unverifiable);
 }
 
 .collapse-toggle {
@@ -61,6 +51,7 @@
   align-items: center;
   transition: all 0.15s;
   flex-shrink: 0;
+  cursor: pointer;
 }
 .collapse-toggle:hover { background: var(--card-bg); color: var(--text-primary); }
 
@@ -85,10 +76,13 @@
   font-weight: 500;
   text-align: left;
   width: 100%;
+  background: transparent;
+  border: none;
   transition: background 0.15s, color 0.15s;
   white-space: nowrap;
   overflow: hidden;
   position: relative;
+  cursor: pointer;
 }
 
 .sidebar-nav-item.collapsed {
@@ -101,11 +95,6 @@
   color: var(--text-primary);
 }
 
-.sidebar-nav-item.active {
-  background: var(--card-bg);
-  color: var(--text-primary);
-}
-
 .nav-icon {
   display: flex;
   align-items: center;
@@ -114,7 +103,6 @@
 
 .nav-label { overflow: hidden; text-overflow: ellipsis; }
 
-/* Tooltip for collapsed items via title */
 .sidebar-nav-item.collapsed[title]:hover::after {
   content: attr(title);
   position: absolute;
@@ -131,6 +119,7 @@
   z-index: 999;
 }
 
+/* Section title */
 .nav-section-title {
   font-size: 0.65rem;
   text-transform: uppercase;
@@ -139,6 +128,7 @@
   padding: 12px 10px 6px;
 }
 
+/* History list */
 .history-list {
   list-style: none;
   display: flex;
@@ -150,10 +140,14 @@
   padding: 7px 10px;
   border-radius: 5px;
   cursor: pointer;
-  transition: background 0.1s;
+  transition: all 0.2s ease;
+  border-left: 2px solid transparent;
 }
-
-.history-item:hover { background: var(--card-bg); }
+.history-item:hover { 
+  background: var(--card-bg); 
+  border-left-color: var(--accent-unverifiable);
+  box-shadow: inset 4px 0 12px -4px rgba(124,92,252,0.2);
+}
 
 .history-title {
   display: flex;
@@ -180,17 +174,31 @@
 .history-score.warning { color: var(--accent-partial); }
 .history-score.bad { color: var(--accent-false); }
 
+/* Empty state */
+.history-empty {
+  text-align: center;
+  color: var(--text-tertiary);
+  font-size: 0.8rem;
+  padding: 20px 10px;
+  line-height: 1.6;
+}
+.history-empty p { margin: 0; }
+
 /* Bottom */
 .sidebar-bottom {
   padding: 8px;
   border-top: 1px solid var(--card-border);
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
 }
 
-/* Profile */
-.profile-area { position: relative; }
+/* Profile area */
+.profile-area {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
 
 .profile-btn {
   display: flex;
@@ -200,11 +208,11 @@
   padding: 8px 10px;
   border-radius: 6px;
   background: transparent;
-  transition: background 0.15s;
+  border: none;
+  cursor: default;
 }
 
 .profile-btn.collapsed { justify-content: center; padding: 8px; }
-.profile-btn:hover { background: var(--card-bg); }
 
 .profile-avatar {
   width: 28px; height: 28px;
@@ -228,37 +236,28 @@
 .profile-name { font-size: 0.8rem; font-weight: 600; color: var(--text-primary); }
 .profile-plan { font-size: 0.65rem; color: var(--text-tertiary); }
 
-.profile-popover {
-  position: absolute;
-  bottom: calc(100% + 8px);
-  left: 0;
-  min-width: 160px;
-  background: var(--bg-main);
-  border: 1px solid var(--card-border);
-  border-radius: 8px;
-  box-shadow: var(--shadow-glow);
-  padding: 6px;
-  z-index: 999;
+/* Upgrade button */
+.upgrade-btn {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 9px 12px;
+  border-radius: 8px;
+  background: rgba(124,92,252,0.12);
+  color: var(--accent-unverifiable);
+  border: 1px solid rgba(124,92,252,0.25);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  animation: purpleGlowPulse 4s infinite;
 }
 
-.profile-popover.popover-right {
-  left: calc(100% + 8px);
-  bottom: 0;
+.upgrade-btn:hover {
+  background: rgba(124,92,252,0.22);
+  transform: translateY(-1px);
+  animation: none;
+  box-shadow: 0 0 20px rgba(124,92,252,0.5);
 }
-
-.popover-item {
-  padding: 8px 10px;
-  border-radius: 5px;
-  font-size: 0.8rem;
-  color: var(--text-primary);
-  text-align: left;
-  background: transparent;
-  transition: background 0.15s;
-}
-.popover-item:hover { background: var(--card-bg); }
-.popover-item.upgrade { color: var(--accent-unverifiable); }
-.popover-item.danger { color: var(--accent-false); }
-.popover-divider { height: 1px; background: var(--card-border); margin: 4px 0; }

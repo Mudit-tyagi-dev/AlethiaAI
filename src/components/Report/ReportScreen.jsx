@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, Download, AlertTriangle, Copy, Check } from 'lucide-react';
+import { ArrowLeft, Download, AlertTriangle, Copy, Check, Trash2 } from 'lucide-react';
 import '../../styles/reportscreen.css';
+import useReportStore from '../../store/useReportStore';
+import useAppStore from '../../store/useAppStore';
+import { destroyReport } from '../../services/api';
 
 /* ─── Helpers ─────────────────────────────────────────────────────────────── */
 
@@ -105,19 +108,21 @@ const SemiGauge = ({ score }) => {
           style={{ transition: 'stroke-dashoffset 0.05s linear' }}
         />
         {/* Needle */}
+        {/* Needle */}
         <line
           x1={cx} y1={cy}
           x2={needleX} y2={needleY}
           stroke={trackColor}
           strokeWidth="2.5"
           strokeLinecap="round"
+          style={{ filter: `drop-shadow(0 0 6px ${trackColor})` }}
         />
-        <circle cx={cx} cy={cy} r="5" fill={trackColor} />
+        <circle cx={cx} cy={cy} r="5" fill={trackColor} style={{ filter: `drop-shadow(0 0 6px ${trackColor})` }} />
         {/* Labels */}
         <text x="14" y="105" fontSize="10" fill="#ef4444" fontWeight="700">FALSE</text>
         <text x="162" y="105" fontSize="10" fill="#10b981" fontWeight="700">TRUE</text>
       </svg>
-      <div className="rs-gauge-score" style={{ color: trackColor }}>
+      <div className="rs-gauge-score" style={{ color: trackColor, textShadow: `0 0 12px ${trackColor}80` }}>
         {animated}%
       </div>
       <div className="rs-gauge-label">TRUTH SCORE</div>
@@ -325,6 +330,9 @@ const RSClaimCard = ({ claim, index, total, style }) => {
 
 /* ─── REPORT SCREEN (main export) ────────────────────────────────────────── */
 const ReportScreen = ({ reportData, query, onBack }) => {
+  const [isDeleting, setIsDeleting] = useState(false);
+  const apiKey = useAppStore((s) => s.apiKey) || localStorage.getItem('alethia_api_key') || '';
+
   const score = Math.round((reportData.overall_score || 0) * 100);
   const aiProb = Math.round((reportData.ai_text_probability || 0) * 100);
   const claims = reportData.claims || [];
@@ -362,6 +370,26 @@ const ReportScreen = ({ reportData, query, onBack }) => {
           <span className="rs-topbar-title">Verification Report</span>
           <span className="rs-topbar-date">{timestamp}</span>
         </div>
+        <button 
+          className="rs-export-btn" 
+          style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', marginRight: '8px', opacity: isDeleting ? 0.6 : 1, cursor: isDeleting ? 'not-allowed' : 'pointer' }}
+          onClick={async () => {
+            if (!window.confirm("Are you sure you want to delete this report?")) return;
+            setIsDeleting(true);
+            try {
+              await destroyReport(reportData.report_id, apiKey);
+              useReportStore.getState().removeReport(reportData.report_id);
+              onBack();
+            } catch (err) {
+              alert("Failed to delete report: " + err.message);
+              setIsDeleting(false);
+            }
+          }}
+          disabled={isDeleting}
+        >
+          <Trash2 size={15} />
+          {isDeleting ? 'Deleting...' : 'Delete'}
+        </button>
         <button className="rs-export-btn" onClick={handleExport}>
           <Download size={15} />
           Export

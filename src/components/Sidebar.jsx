@@ -1,20 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
-  Home, Clock, Star, Tag, Settings, User, ChevronLeft, ChevronRight,
-  FileText, X, MessageSquarePlus
+  Home, Settings, ChevronLeft, ChevronRight,
+  FileText, Zap
 } from 'lucide-react';
 import '../styles/sidebar.css';
-
-const SidebarItem = ({ icon, label, collapsed, onClick, active }) => (
-  <button
-    className={`sidebar-nav-item ${active ? 'active' : ''} ${collapsed ? 'collapsed' : ''}`}
-    onClick={onClick}
-    title={collapsed ? label : ''}
-  >
-    <span className="nav-icon">{icon}</span>
-    {!collapsed && <span className="nav-label">{label}</span>}
-  </button>
-);
+import useReportStore from '../store/useReportStore';
+import useAppStore from '../store/useAppStore';
 
 const formatSidebarDate = (iso) => {
   try {
@@ -22,26 +13,10 @@ const formatSidebarDate = (iso) => {
   } catch { return ''; }
 };
 
-const Sidebar = ({ isOpen, onClose, openSettings, onHomeClick, isCollapsed, onToggleCollapse, onReportClick, sidebarVersion }) => {
-  const [showProfile, setShowProfile] = useState(false);
-  const [reports, setReports] = useState([]);
-  const profileRef = useRef(null);
-
-  // Load reports from localStorage whenever sidebarVersion changes
-  useEffect(() => {
-    const stored = JSON.parse(localStorage.getItem('alethia_reports') || '[]');
-    setReports(stored);
-  }, [sidebarVersion]);
-
-  useEffect(() => {
-    const handleClick = (e) => {
-      if (profileRef.current && !profileRef.current.contains(e.target)) {
-        setShowProfile(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
-  }, []);
+const Sidebar = ({ isOpen, onClose, onHomeClick, isCollapsed, onToggleCollapse, onReportClick }) => {
+  const reports = useReportStore((s) => s.reports);
+  const openSettings = useAppStore((s) => s.openSettings);
+  const openPricing = useAppStore((s) => s.openPricing);
 
   return (
     <>
@@ -64,16 +39,15 @@ const Sidebar = ({ isOpen, onClose, openSettings, onHomeClick, isCollapsed, onTo
 
         {/* Nav */}
         <nav className="sidebar-nav">
-          <SidebarItem icon={<Home size={18} />} label="Home" collapsed={isCollapsed} onClick={onHomeClick} />
-          <SidebarItem icon={<Clock size={18} />} label="History" collapsed={isCollapsed} onClick={() => {}} />
-          <SidebarItem icon={<Star size={18} />} label="Saved" collapsed={isCollapsed} onClick={() => {}} />
-          <SidebarItem icon={<Tag size={18} />} label="Labels" collapsed={isCollapsed} onClick={() => {}} />
-
+          {/* Recent Reports Section */}
           {!isCollapsed && (
             <>
-              <div className="nav-section-title">Recent Reports</div>
+              <div className="nav-section-title">RECENT REPORTS</div>
               {reports.length === 0 ? (
-                <div className="history-empty">No reports yet</div>
+                <div className="history-empty">
+                  <p>No reports yet.</p>
+                  <p>Start verifying claims!</p>
+                </div>
               ) : (
                 <ul className="history-list">
                   {reports.map(report => {
@@ -86,7 +60,9 @@ const Sidebar = ({ isOpen, onClose, openSettings, onHomeClick, isCollapsed, onTo
                       >
                         <div className="history-title">
                           <FileText size={13} className="history-icon" />
-                          <span className="history-title-text">{report.title}</span>
+                          <span className="history-title-text">
+                            {report.title?.substring(0, 40) || 'Untitled'}
+                          </span>
                         </div>
                         <div className="history-meta">
                           <span className="history-date">{formatSidebarDate(report.date)}</span>
@@ -105,19 +81,17 @@ const Sidebar = ({ isOpen, onClose, openSettings, onHomeClick, isCollapsed, onTo
 
         {/* Footer */}
         <div className="sidebar-bottom">
-          <SidebarItem
-            icon={<Settings size={18} />}
-            label="Settings"
-            collapsed={isCollapsed}
-            onClick={() => openSettings()}
-          />
+          <button
+            className={`sidebar-nav-item ${isCollapsed ? 'collapsed' : ''}`}
+            onClick={openSettings}
+            title={isCollapsed ? 'Settings' : ''}
+          >
+            <span className="nav-icon"><Settings size={18} /></span>
+            {!isCollapsed && <span className="nav-label">Settings</span>}
+          </button>
 
-          <div className="profile-area" ref={profileRef}>
-            <button
-              className={`profile-btn ${isCollapsed ? 'collapsed' : ''}`}
-              onClick={() => setShowProfile(p => !p)}
-              title={isCollapsed ? 'Account' : ''}
-            >
+          <div className="profile-area">
+            <div className={`profile-btn ${isCollapsed ? 'collapsed' : ''}`}>
               <div className="profile-avatar">U</div>
               {!isCollapsed && (
                 <div className="profile-info">
@@ -125,15 +99,13 @@ const Sidebar = ({ isOpen, onClose, openSettings, onHomeClick, isCollapsed, onTo
                   <span className="profile-plan">Free Plan</span>
                 </div>
               )}
-            </button>
+            </div>
 
-            {showProfile && (
-              <div className={`profile-popover ${isCollapsed ? 'popover-right' : 'popover-up'}`}>
-                <button className="popover-item">Profile</button>
-                <button className="popover-item upgrade">⬆ Upgrade</button>
-                <div className="popover-divider" />
-                <button className="popover-item danger">Log out</button>
-              </div>
+            {!isCollapsed && (
+              <button className="upgrade-btn" onClick={openPricing}>
+                <Zap size={14} />
+                <span>Upgrade</span>
+              </button>
             )}
           </div>
         </div>

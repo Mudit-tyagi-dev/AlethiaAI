@@ -4,8 +4,12 @@ import InputBar from './InputBar';
 import LandingScreen from '../LandingScreen';
 import '../../styles/chatbox.css';
 import '../../styles/landing.css';
+import useReportStore from '../../store/useReportStore';
+import useWSStore from '../../store/useWSStore';
+import useAppStore from '../../store/useAppStore';
+import { sendMessage } from '../../services/wsManager';
+import { detectText, detectImage, detectPdf } from '../../services/api';
 
-const WS_URL = 'wss://factify-backend-tcup.onrender.com/ws/verify';
 const TIMEOUT_MS = 60000;
 
 const STAGE_LABELS = {
@@ -22,297 +26,116 @@ const formatDate = (iso) => {
   } catch { return ''; }
 };
 
-function saveReport(reportEntry) {
-  const existing = JSON.parse(localStorage.getItem('alethia_reports') || '[]');
-  existing.unshift(reportEntry);
-  localStorage.setItem('alethia_reports', JSON.stringify(existing));
-}
+const ChatThread = ({ openSettingsOnApiTab, onViewReport }) => {
+  // Zustand State
+  const messages = useWSStore((s) => s.messages);
+  const isProcessing = useWSStore((s) => s.isProcessing);
+  const pipelineStage = useWSStore((s) => s.pipelineStage);
+  const stageProgress = useWSStore((s) => s.pipelineProgress);
+  const claims = useWSStore((s) => s.claims);
+  const claimOrder = useWSStore((s) => s.claimOrder);
+  const finalReport = useWSStore((s) => s.finalReport);
+  const currentQuery = useWSStore((s) => s.currentQuery);
+  const isVerifying = isProcessing && !finalReport;
 
-const ChatThread = ({ wsRef, connectWS, openSettingsOnApiTab, selectedReport, onReportSaved, onViewReport }) => {
-  const [messages, setMessages] = useState([]);
-  const [isProcessing, setIsProcessing] = useState(false);
+  const stageLabel = pipelineStage ? (STAGE_LABELS[pipelineStage] || pipelineStage) : '⚡ Processing...';
+
+  // Local State
   const [replyRequest, setReplyRequest] = useState(null);
   const [inputFocusRequest, setInputFocusRequest] = useState(null);
-
-  // Real-time WebSocket state
-  const [claims, setClaims] = useState({}); // claim_id → claim object
-  const [claimOrder, setClaimOrder] = useState([]); // ordered list of claim_ids
-  const [stageLabel, setStageLabel] = useState('');
-  const [stageProgress, setStageProgress] = useState(0);
-  const [isVerifying, setIsVerifying] = useState(false);
-  const [finalReport, setFinalReport] = useState(null);
-
-  // Status
-  const [showReconnectBanner, setShowReconnectBanner] = useState(false);
+  const [inputMode, setInputMode] = useState('fact-check');
   const [toastMessage, setToastMessage] = useState('');
   const [showTimeoutWarning, setShowTimeoutWarning] = useState(false);
+  const [showReconnectBanner, setShowReconnectBanner] = useState(false); // To satisfy old usages
 
   const bottomRef = useRef(null);
   const timeoutRef = useRef(null);
-  const currentQueryRef = useRef('');
+  const currentQueryModeRef = useRef('fact-check');
 
-  const isLanding = messages.length === 0 && !selectedReport;
+  const isLanding = messages.length === 0;
 
-  // ── Scroll to bottom ─────────────────────────────────────────────────────
   useEffect(() => {
     setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 60);
   }, [messages, claims, finalReport]);
 
-  // ── Load selected report (sidebar click) ─────────────────────────────────
-  useEffect(() => {
-    if (selectedReport) {
-      setMessages([
-        { id: 1, type: 'user', content: selectedReport.title || 'Saved Report', timestamp: formatDate(selectedReport.date) },
-        { id: 2, type: 'saved-report', reportData: selectedReport, timestamp: formatDate(selectedReport.date) }
-      ]);
-    }
-  }, [selectedReport]);
-
-  // ── Toast helper ──────────────────────────────────────────────────────────
   const showToast = useCallback((msg, duration = 4000) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(''), duration);
   }, []);
 
-  // ── WS Event Handlers ─────────────────────────────────────────────────────
-  const attachHandlers = useCallback((ws, resolve) => {
-    ws.onmessage = (evt) => {
-      let data;
-      try { data = JSON.parse(evt.data); } catch { return; }
-
-      const { event } = data;
-
-      if (event === 'stage') {
-        const { stage, progress } = data;
-        setStageLabel(STAGE_LABELS[stage] || stage);
-        setStageProgress(Math.round((progress || 0) * 100));
-      }
-
-      else if (event === 'claim_found') {
-        const { claim_id, text } = data;
-        setClaims(prev => ({
-          ...prev,
-          [claim_id]: {
-            claim_id, text,
-            status: 'searching',
-            verdict: null,
-            confidence: 0,
-            reasoning: '',
-            sources: [],
-            conflicting: false,
-          }
-        }));
-        setClaimOrder(prev => prev.includes(claim_id) ? prev : [...prev, claim_id]);
-      }
-
-      else if (event === 'search_done') {
-        const { claim_id, sources = [], sources_found } = data;
-        setClaims(prev => ({
-          ...prev,
-          [claim_id]: {
-            ...(prev[claim_id] || {}),
-            status: 'verifying',
-            sources,
-            sources_found,
-          }
-        }));
-      }
-
-      else if (event === 'claim_verified') {
-        const { claim_id, verdict, confidence, reasoning, conflicting, sources } = data;
-        setClaims(prev => ({
-          ...prev,
-          [claim_id]: {
-            ...(prev[claim_id] || {}),
-            status: 'verified',
-            verdict,
-            confidence: confidence || 0,
-            reasoning: reasoning || '',
-            conflicting: !!conflicting,
-            sources: sources || prev[claim_id]?.sources || [],
-          }
-        }));
-      }
-
-      else if (event === 'report_done') {
-        clearTimeout(timeoutRef.current);
-        setShowTimeoutWarning(false);
-
-        const { report_id, overall_score, ai_text_probability, total_claims, claims: claimsArr = [] } = data;
-        const trueCount = data['true'] ?? 0;
-        const falseCount = data['false'] ?? 0;
-        const partialCount = data['partial'] ?? 0;
-        const unverifiableCount = data['unverifiable'] ?? 0;
-
-        const report = {
-          report_id,
-          overall_score,
-          ai_text_probability,
-          total_claims,
-          true_count: trueCount,
-          false_count: falseCount,
-          partial_count: partialCount,
-          unverifiable_count: unverifiableCount,
-          claims: claimsArr,
-        };
-
-        setFinalReport(report);
-        setIsVerifying(false);
-        setIsProcessing(false);
-        setStageLabel('');
-        setStageProgress(0);
-
-        // Save to localStorage
-        const firstClaim = claimsArr[0];
-        const title = firstClaim?.text
-          ? firstClaim.text.substring(0, 40) + (firstClaim.text.length > 40 ? '...' : '')
-          : currentQueryRef.current.substring(0, 40);
-
-        const reportEntry = {
-          report_id,
-          title,
-          query: currentQueryRef.current,
-          date: new Date().toISOString(),
-          overall_score: Math.round((overall_score || 0) * 100),
-          total_claims,
-          true_count: trueCount,
-          false_count: falseCount,
-          partial_count: partialCount,
-          unverifiable_count: unverifiableCount,
-          claims: claimsArr,
-          ai_text_probability,
-        };
-        saveReport(reportEntry);
-        onReportSaved?.();
-
-        if (resolve) resolve();
-      }
-    };
-
-    ws.onerror = () => {
-      showToast('Connection error. Retrying...');
-      setIsProcessing(false);
-      setIsVerifying(false);
-      clearTimeout(timeoutRef.current);
-      // Auto-reconnect in 3s
-      setTimeout(() => {
-        const newWs = new WebSocket(WS_URL);
-        wsRef.current = newWs;
-        attachHandlers(newWs, null);
-      }, 3000);
-    };
-
-    ws.onclose = (evt) => {
-      if (!evt.wasClean) {
-        setShowReconnectBanner(true);
-        setTimeout(() => {
-          const newWs = new WebSocket(WS_URL);
-          wsRef.current = newWs;
-          attachHandlers(newWs, null);
-          newWs.onopen = () => setShowReconnectBanner(false);
-        }, 3000);
-      }
-    };
-  }, [wsRef, showToast, onReportSaved]);
-
-  // ── Ensure WS connected ───────────────────────────────────────────────────
-  const ensureConnected = useCallback(() => {
-    return new Promise((resolve) => {
-      const ws = wsRef.current;
-      if (ws && ws.readyState === WebSocket.OPEN) {
-        attachHandlers(ws, resolve);
-        resolve();
-        return;
-      }
-      const newWs = new WebSocket(WS_URL);
-      wsRef.current = newWs;
-      newWs.onopen = () => {
-        attachHandlers(newWs, resolve);
-        resolve();
-      };
-    });
-  }, [wsRef, attachHandlers]);
-
-  // Also attach handlers to existing ws on mount (in case it's already open)
-  useEffect(() => {
-    const ws = wsRef?.current;
-    if (ws) attachHandlers(ws, null);
-  }, [wsRef, attachHandlers]);
-
-  // ── Handle Send ───────────────────────────────────────────────────────────
-  const handleSend = useCallback(async (text) => {
-    const apiKey = localStorage.getItem('alethia_api_key') || '';
+  const handleSend = useCallback(async (textOrFile) => {
+    console.log('SEND BUTTON CLICKED', textOrFile);
+    
+    const apiKey = useAppStore.getState().apiKey || localStorage.getItem('alethia_api_key') || '';
     if (!apiKey.trim()) {
       openSettingsOnApiTab('Please add your API key to continue');
       return;
     }
 
-    // Reset state for new query
-    setClaims({});
-    setClaimOrder([]);
-    setFinalReport(null);
+    const store = useWSStore.getState();
+    store.resetClaims();
+    store.setProcessing(true);
+    
+    const queryStr = typeof textOrFile === 'string' ? textOrFile : textOrFile.name;
+    store.setCurrentQuery(queryStr);
+
     setShowTimeoutWarning(false);
-    currentQueryRef.current = text;
+    currentQueryModeRef.current = inputMode;
 
     const msgId = Date.now();
-    setMessages(prev => [
-      ...prev,
-      { id: msgId, type: 'user', content: text, timestamp: getTime() },
-    ]);
-    setIsProcessing(true);
-    setIsVerifying(true);
-    setStageProgress(0);
-    setStageLabel('⚡ Extracting Claims...');
+    const displayContent = typeof textOrFile === 'string' ? textOrFile : `📎 Uploaded ${textOrFile.name}`;
+    store.addMessage({ id: msgId, type: 'user', content: displayContent, timestamp: getTime() });
 
     try {
-      await ensureConnected();
-      const ws = wsRef.current;
-      if (!ws || ws.readyState !== WebSocket.OPEN) {
-        showToast('Could not connect. Please try again.');
-        setIsProcessing(false);
-        setIsVerifying(false);
-        return;
-      }
-      ws.send(JSON.stringify({ content: text, api_key: apiKey }));
+      if (inputMode === 'fact-check') {
+        const payload = { content: textOrFile, api_key: apiKey };
+        await sendMessage(payload);
 
-      // 60s timeout warning
-      clearTimeout(timeoutRef.current);
-      timeoutRef.current = setTimeout(() => {
-        setShowTimeoutWarning(true);
-      }, TIMEOUT_MS);
-    } catch {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = setTimeout(() => {
+          setShowTimeoutWarning(true);
+        }, TIMEOUT_MS);
+      } else {
+        // AI Detection Modes
+        let result;
+        if (inputMode === 'ai-text') {
+           result = await detectText(textOrFile, apiKey);
+        } else if (inputMode === 'ai-image') {
+           result = await detectImage(textOrFile, apiKey);
+        } else if (inputMode === 'ai-pdf') {
+           result = await detectPdf(textOrFile, apiKey);
+        }
+        
+        const reportObj = {
+          report_id: result.id,
+          ai_text_probability: result.ai_probability, 
+        };
+        store.setProcessing(false);
+        store.setFinalReport(reportObj);
+      }
+    } catch (err) {
+      console.error('API/WS Error:', err);
       showToast('Connection error. Please try again.');
-      setIsProcessing(false);
-      setIsVerifying(false);
+      store.setProcessing(false);
     }
-  }, [ensureConnected, wsRef, openSettingsOnApiTab, showToast]);
+  }, [openSettingsOnApiTab, showToast, inputMode]);
 
   const handleReplyRequest = (text) => setReplyRequest({ id: Date.now(), text });
 
-  const handleTryDemo = () => {
-    handleSend('Humans only use 10% of their brains.');
-  };
-
-  // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div className="chat-container">
-      {/* Reconnect Banner */}
       {showReconnectBanner && (
         <div className="reconnect-banner">
           <span className="reconnect-spinner" /> Reconnecting...
         </div>
       )}
 
-      {/* Toast */}
       {toastMessage && (
         <div className="ws-toast">{toastMessage}</div>
       )}
 
       {isLanding ? (
-        <LandingScreen
-          onTryDemo={handleTryDemo}
-          onPasteClick={() => setInputFocusRequest(Date.now())}
-        />
+        <LandingScreen onSend={handleSend} mode={inputMode} setMode={setInputMode} />
       ) : (
         <div className="chat-feed">
           <div className="chat-messages-wrapper">
@@ -320,7 +143,6 @@ const ChatThread = ({ wsRef, connectWS, openSettingsOnApiTab, selectedReport, on
               <MessageBubble key={msg.id} message={msg} onReply={handleReplyRequest} />
             ))}
 
-            {/* Live: Progress Bar + Stage Label */}
             {isVerifying && (
               <div className="ws-pipeline-block">
                 <div className="ws-stage-label">{stageLabel}</div>
@@ -333,8 +155,8 @@ const ChatThread = ({ wsRef, connectWS, openSettingsOnApiTab, selectedReport, on
               </div>
             )}
 
-            {/* Live: Claim Cards */}
-            {claimOrder.length > 0 && (
+            {/* In AI Text Mode, DO NOT show claims */}
+            {currentQueryModeRef.current !== 'ai-text' && claimOrder.length > 0 && (
               <div className="live-claims-section">
                 {claimOrder.map((id, index) => {
                   const claim = claims[id];
@@ -352,14 +174,17 @@ const ChatThread = ({ wsRef, connectWS, openSettingsOnApiTab, selectedReport, on
 
             {/* Final Report */}
             {finalReport && (
-              <FinalReportBlock
-                reportData={finalReport}
-                query={currentQueryRef.current}
-                onViewReport={onViewReport}
-              />
+              currentQueryModeRef.current !== 'fact-check' ? (
+                <AITextResultCard reportData={finalReport} query={currentQuery} mode={currentQueryModeRef.current} />
+              ) : (
+                <FinalReportBlock
+                  reportData={finalReport}
+                  query={currentQuery}
+                  onViewReport={onViewReport}
+                />
+              )
             )}
 
-            {/* Timeout Warning */}
             {showTimeoutWarning && (
               <div className="timeout-warning">
                 ⏳ Verification is taking longer than usual...
@@ -371,14 +196,18 @@ const ChatThread = ({ wsRef, connectWS, openSettingsOnApiTab, selectedReport, on
         </div>
       )}
 
-      <div className="chat-input-area">
-        <InputBar
-          onSend={handleSend}
-          isProcessing={isProcessing}
-          replyRequest={replyRequest}
-          focusRequest={inputFocusRequest}
-        />
-      </div>
+      {!isLanding && (
+        <div className="chat-input-area">
+          <InputBar
+            onSend={handleSend}
+            isProcessing={isProcessing}
+            replyRequest={replyRequest}
+            focusRequest={inputFocusRequest}
+            mode={inputMode}
+            setMode={setInputMode}
+          />
+        </div>
+      )}
     </div>
   );
 };
@@ -388,6 +217,84 @@ import LiveClaimCardComponent from '../Report/ClaimCard';
 const LiveClaimCard = ({ claim, index }) => {
   return <LiveClaimCardComponent claim={claim} index={index} />;
 };
+
+
+// ─── AI Text/Image/PDF Result Card ──────────────────────────────────────────
+const AITextResultCard = ({ reportData, query, mode }) => {
+  const [animProb, setAnimProb] = useState(0);
+  const aiProb = Math.round((reportData.ai_text_probability || 0) * 100);
+  
+  useEffect(() => {
+    const timer = setTimeout(() => setAnimProb(aiProb), 100);
+    return () => clearTimeout(timer);
+  }, [aiProb]);
+
+  let typeName = mode === 'ai-image' ? 'image' : mode === 'ai-pdf' ? 'document' : 'text';
+  let label = `Likely Authentic/Human`;
+  let colorClass = "ai-human";
+  let explanation = `This ${typeName} shows strong characteristics of being human-created/authentic.`;
+  
+  if (aiProb >= 70) {
+    label = "Likely AI Generated";
+    colorClass = "ai-ai";
+    explanation = `This ${typeName} shows strong patterns typical of AI generation.`;
+  } else if (aiProb >= 30) {
+    label = "Uncertain / Mixed";
+    colorClass = "ai-mixed";
+    // Exact wording requested previously + some generalization
+    explanation = `This ${typeName} shows mixed signals — could be authentic or AI generated.`;
+  }
+
+  const rotation = (animProb / 100) * 180 - 90;
+
+  return (
+    <div className={`ai-text-result-card ${colorClass}`}>
+      <div className="ai-text-header">
+        <span className="ai-text-title">
+          {mode === 'ai-image' ? '🤖 AI Image Analysis' : mode === 'ai-pdf' ? '🤖 AI PDF Analysis' : '🤖 AI Text Analysis'}
+        </span>
+        <span className="ai-text-query">"{query.substring(0, 60)}{query.length > 60 ? '...' : ''}"</span>
+      </div>
+      <div className="ai-text-divider" />
+      
+      <div className="ai-text-gauge-container">
+        <svg viewBox="0 0 200 110" className="ai-gauge-svg">
+          <path d="M 15 95 A 80 80 0 0 1 185 95" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="16" strokeLinecap="round" />
+          <defs>
+            <linearGradient id="aiGaugeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#10b981" />
+              <stop offset="50%" stopColor="#eab308" />
+              <stop offset="100%" stopColor="#ef4444" />
+            </linearGradient>
+          </defs>
+          <path d="M 15 95 A 80 80 0 0 1 185 95" fill="none" stroke="url(#aiGaugeGrad)" strokeWidth="16" strokeLinecap="round" 
+            strokeDasharray="251.2" strokeDashoffset={251.2 - (251.2 * animProb / 100)} 
+            className="ai-gauge-fill-path" />
+        </svg>
+        <div className="ai-gauge-needle" style={{ transform: `rotate(${rotation}deg)` }}>
+          <div className="ai-needle-base"></div>
+          <div className="ai-needle-point"></div>
+        </div>
+        
+        <div className="ai-gauge-center-text">
+          <div className="ai-gauge-score">{animProb}%</div>
+          <div className="ai-gauge-label">AI GENERATED PROBABILITY</div>
+        </div>
+      </div>
+
+      <div className={`ai-text-verdict ai-banner-${colorClass}`}>
+        {aiProb < 30 ? '🟢 ' : aiProb >= 70 ? '🔴 ' : '🟡 '}{label}
+      </div>
+      
+      <p className="ai-text-explanation">{explanation}</p>
+      
+      <div className="ai-text-timestamp">
+        Analyzed: {new Date().toLocaleString()}
+      </div>
+    </div>
+  );
+};
+
 
 // ─── Final Report Block ─────────────────────────────────────────────────────
 import TruthMeter from '../Report/TruthMeter';
@@ -429,7 +336,6 @@ const FinalReportBlock = ({ reportData, query, onViewReport }) => {
     ? `High (${aiProb}%) — Likely AI Generated`
     : `${aiProbLabel} (${aiProb}%)`;
 
-  // Score-based glow
   const glowColor = score < 40 ? 'rgba(239,68,68,0.12)' : score < 70 ? 'rgba(234,179,8,0.10)' : 'rgba(16,185,129,0.12)';
 
   return (
@@ -437,7 +343,6 @@ const FinalReportBlock = ({ reportData, query, onViewReport }) => {
       className="final-report-block-v2 slideUpFadeIn"
       style={{ boxShadow: `0 8px 40px ${glowColor}` }}
     >
-      {/* ── TOP ROW ── */}
       <div className="frb-top-row">
         <div className="frb-top-left">
           <span className="frb-title">✦ Verification Complete</span>
@@ -448,12 +353,10 @@ const FinalReportBlock = ({ reportData, query, onViewReport }) => {
 
       <div className="frb-divider" />
 
-      {/* ── TRUTH METER ── */}
       <TruthMeter score={score} />
 
       <div className="frb-divider" />
 
-      {/* ── KPI GRID (2x2) ── */}
       <div className="frb-kpi-grid">
         {kpiData.map(({ label, value, cls }) => (
           <div key={label} className={`frb-kpi-cell ${cls}`}>
@@ -465,7 +368,6 @@ const FinalReportBlock = ({ reportData, query, onViewReport }) => {
 
       <div className="frb-divider" />
 
-      {/* ── AI TEXT PROBABILITY ── */}
       <div className="frb-ai-row" style={{ background: aiProbBg }}>
         <span className="frb-ai-left">🤖 AI Text Probability</span>
         <span className="frb-ai-badge" style={{ color: aiProbColor, borderColor: aiProbColor }}>
@@ -473,7 +375,6 @@ const FinalReportBlock = ({ reportData, query, onViewReport }) => {
         </span>
       </div>
 
-      {/* ── FOOTER ── */}
       <div className="frb-footer">
         <span className="frb-footer-brand">Verified by AlethiaAI ✦</span>
         {reportData.report_id && (
@@ -488,4 +389,3 @@ const FinalReportBlock = ({ reportData, query, onViewReport }) => {
 };
 
 export default ChatThread;
-

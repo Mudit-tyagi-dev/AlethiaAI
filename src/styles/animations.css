@@ -24,3 +24,38 @@
   50% { opacity: 1; }
   100% { opacity: 0.7; }
 }
+
+@keyframes purpleGlowPulse {
+  0% { box-shadow: 0 0 10px rgba(124, 92, 252, 0.2); }
+  50% { box-shadow: 0 0 25px rgba(124, 92, 252, 0.6); }
+  100% { box-shadow: 0 0 10px rgba(124, 92, 252, 0.2); }
+}
+
+@keyframes greenGlowPulse {
+  0% { box-shadow: 0 0 8px rgba(16, 185, 129, 0.2); }
+  50% { box-shadow: 0 0 20px rgba(16, 185, 129, 0.5); }
+  100% { box-shadow: 0 0 8px rgba(16, 185, 129, 0.2); }
+}
+
+@keyframes redGlowPulse {
+  0% { box-shadow: 0 0 8px rgba(239, 68, 68, 0.2); }
+  50% { box-shadow: 0 0 20px rgba(239, 68, 68, 0.5); }
+  100% { box-shadow: 0 0 8px rgba(239, 68, 68, 0.2); }
+}
+
+@keyframes yellowGlowPulse {
+  0% { box-shadow: 0 0 8px rgba(234, 179, 8, 0.2); }
+  50% { box-shadow: 0 0 20px rgba(234, 179, 8, 0.5); }
+  100% { box-shadow: 0 0 8px rgba(234, 179, 8, 0.2); }
+}
+
+@keyframes inputBreathingGlow {
+  0% { box-shadow: 0 0 0 0 rgba(124, 92, 252, 0); }
+  50% { box-shadow: 0 0 15px rgba(124, 92, 252, 0.1); }
+  100% { box-shadow: 0 0 0 0 rgba(124, 92, 252, 0); }
+}
+
+@keyframes modalFadeScale {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}

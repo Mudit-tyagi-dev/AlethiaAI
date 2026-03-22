@@ -1,3 +1,4 @@
+/* ── Landing Screen ──────────────────────────────────────────────── */
 .landing-screen {
   display: flex;
   align-items: center;
@@ -12,27 +13,38 @@
   flex-direction: column;
   align-items: center;
   text-align: center;
-  gap: 16px;
-  max-width: 520px;
+  gap: 20px;
+  max-width: 680px;
+  width: 100%;
 }
 
+/* ── Logo ────────────────────────────────────────────────────────── */
 .landing-logo {
-  width: 64px;
-  height: 64px;
+  width: 72px;
+  height: 72px;
   background: var(--card-bg);
   border: 1px solid var(--card-border);
-  border-radius: 16px;
+  border-radius: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 2rem;
-  font-family: var(--heading), sans-serif;
-  font-weight: 800;
-  color: var(--accent-unverifiable);
-  margin-bottom: 8px;
-  box-shadow: 0 0 0 4px rgba(139,92,246,0.08);
+  margin-bottom: 4px;
+  box-shadow: 0 0 0 4px rgba(124,92,252,0.08), 0 0 30px rgba(124,92,252,0.06);
+  animation: subtleFloat 3s ease-in-out infinite;
 }
 
+.landing-logo-symbol {
+  font-size: 2.2rem;
+  color: var(--accent-unverifiable);
+  animation: pulseGlow 3s infinite;
+}
+
+@keyframes subtleFloat {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-4px); }
+}
+
+/* ── Heading ─────────────────────────────────────────────────────── */
 .landing-heading {
   font-size: 2.6rem;
   font-weight: 700;
@@ -43,73 +55,116 @@
   margin: 0;
 }
 
-.landing-accent-line {
-  font-size: 1.2rem;
-  font-weight: 600;
-  color: var(--accent-unverifiable);
-  margin: 0;
-}
-
 .landing-subtitle {
-  font-size: 0.95rem;
+  font-size: 1rem;
   color: var(--text-secondary);
-  line-height: 1.5;
+  line-height: 1.65;
   margin: 0;
 }
 
-.landing-actions {
+/* ── Input ───────────────────────────────────────────────────────── */
+.landing-input-wrap {
+  position: relative;
+  width: 100%;
+  max-width: 620px;
   display: flex;
-  gap: 12px;
+  flex-direction: column;
   margin-top: 8px;
+  background: var(--input-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
+  transition: all 0.3s ease;
+  animation: inputBreathingGlow 4s ease-in-out infinite;
 }
 
-.landing-btn {
-  padding: 11px 24px;
-  border-radius: 8px;
-  font-size: 0.95rem;
-  font-weight: 600;
+.landing-input-wrap:focus-within {
+  border-color: var(--accent-unverifiable);
+  box-shadow: 0 0 0 3px rgba(124,92,252,0.2), 0 0 30px rgba(124,92,252,0.15);
+  animation: none;
+  transform: translateY(-2px);
+}
+
+.landing-input-inner {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding-left: 8px;
+}
+
+.landing-mode-selector {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.landing-input {
+  flex: 1;
+  height: 64px;
+  background: transparent;
+  border: none;
+  padding: 0 16px;
+  font-size: 1.05rem;
+  color: var(--text-primary);
+  outline: none;
   font-family: var(--sans), sans-serif;
-  transition: all 0.15s ease;
-  cursor: pointer;
 }
 
-.landing-btn.primary {
+.landing-input::placeholder {
+  color: var(--text-tertiary);
+}
+
+.landing-char-count {
+  position: absolute;
+  bottom: -24px;
+  right: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  transition: color 0.2s;
+  opacity: 0;
+}
+.landing-char-count.visible {
+  opacity: 1;
+}
+
+/* ── Send Button ─────────────────────────────────────────────────── */
+.landing-send-btn {
+  padding: 0 16px;
+  background: transparent;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.send-btn-inner {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: var(--text-primary);
+  color: var(--bg-main);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.landing-send-btn:hover:not(:disabled) .send-btn-inner {
+  box-shadow: 0 0 15px rgba(124,92,252,0.4);
+  transform: scale(1.05);
   background: var(--accent-unverifiable);
   color: #fff;
-  border: none;
-  box-shadow: 0 2px 12px rgba(139,92,246,0.25);
 }
 
-.landing-btn.primary:hover {
-  filter: brightness(1.1);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 16px rgba(139,92,246,0.35);
+.landing-send-btn:active:not(:disabled) .send-btn-inner {
+  transform: scale(0.95);
 }
 
-.landing-btn.outline {
-  background: transparent;
-  color: var(--text-primary);
-  border: 1px solid var(--card-border);
-}
-
-.landing-btn.outline:hover {
-  background: var(--card-bg);
-  border-color: var(--text-tertiary);
-}
-
-.landing-chips {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  justify-content: center;
-  margin-top: 8px;
-}
-
-.chip {
-  font-size: 0.75rem;
+.landing-send-btn:disabled .send-btn-inner {
+  background: var(--card-border);
   color: var(--text-secondary);
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
-  padding: 5px 12px;
-  border-radius: 20px;
+  cursor: not-allowed;
 }

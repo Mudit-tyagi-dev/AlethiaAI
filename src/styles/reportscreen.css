@@ -1,7 +1,3 @@
-/* ═══════════════════════════════════════════
-   REPORT SCREEN — Full Page View
-   ═══════════════════════════════════════════ */
-
 @keyframes rsFadeIn {
   from { opacity: 0; transform: translateY(20px); }
   to   { opacity: 1; transform: translateY(0); }
@@ -208,7 +204,18 @@
   padding: 18px 16px;
   text-align: center;
   backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: all 0.2s ease;
 }
+
+.rs-kpi-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(255,255,255,0.08);
+  border-color: rgba(255,255,255,0.2);
+}
+.rs-kpi-card.kpi-t:hover { border-color: rgba(16,185,129,0.3); box-shadow: 0 6px 20px rgba(16,185,129,0.15); }
+.rs-kpi-card.kpi-f:hover { border-color: rgba(239,68,68,0.3); box-shadow: 0 6px 20px rgba(239,68,68,0.15); }
+.rs-kpi-card.kpi-p:hover { border-color: rgba(234,179,8,0.3); box-shadow: 0 6px 20px rgba(234,179,8,0.15); }
 
 .rs-kpi-value {
   font-size: 2rem;
@@ -226,9 +233,9 @@
 }
 
 .kpi-total .rs-kpi-value { color: var(--text-primary); }
-.kpi-t    .rs-kpi-value  { color: #10b981; }
-.kpi-f    .rs-kpi-value  { color: #ef4444; }
-.kpi-p    .rs-kpi-value  { color: #eab308; }
+.kpi-t    .rs-kpi-value  { color: #10b981; text-shadow: 0 0 10px rgba(16,185,129,0.3); }
+.kpi-f    .rs-kpi-value  { color: #ef4444; text-shadow: 0 0 10px rgba(239,68,68,0.3); }
+.kpi-p    .rs-kpi-value  { color: #eab308; text-shadow: 0 0 10px rgba(234,179,8,0.3); }
 
 /* ── Claims Section ───────────────────────────────────────────────────────── */
 .rs-claims-section {
