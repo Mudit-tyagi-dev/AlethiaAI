@@ -342,3 +342,330 @@
 
 .action-up  { color: var(--accent-true) !important; }
 .action-down { color: var(--accent-false) !important; }
+
+/* ═══════════════════════════════════════════════════════════
+   NEW LIVE CLAIM CARD — WS real-time states + collapse/expand
+   ═══════════════════════════════════════════════════════════ */
+
+@keyframes slideInCard {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulseGray {
+  0%, 100% { opacity: 0.5; }
+  50%       { opacity: 1; }
+}
+
+@keyframes spinnerRotate {
+  to { transform: rotate(360deg); }
+}
+
+.slide-in-card {
+  animation: slideInCard 0.35s ease both;
+}
+
+.claim-card-new {
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  background: var(--card-bg);
+  margin-bottom: 10px;
+  overflow: hidden;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.claim-card-new:hover {
+  border-color: var(--text-tertiary);
+}
+
+/* Cursor pointer only when verified (clickable) */
+.card-expanded,
+.card-collapsed { cursor: pointer; }
+
+/* ── Main Row ── */
+.card-main-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+}
+
+.card-left  { flex-shrink: 0; }
+.card-center { flex: 1; min-width: 0; }
+.card-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.card-claim-text {
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  line-height: 1.45;
+  margin: 0;
+}
+
+.text-truncated {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Verdict Pill (new shape) ── */
+.verdict-pill-new {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 12px;
+  white-space: nowrap;
+  border: 1px solid transparent;
+  letter-spacing: 0.4px;
+}
+
+.verdict-dot-new {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Verdict colors — WS values are "True" / "False" / "Partial" / "Unverifiable" */
+.verdict-true        { color: var(--accent-true);          background: rgba(16,185,129,0.08);  border-color: rgba(16,185,129,0.2); }
+.verdict-true .verdict-dot-new         { background: var(--accent-true); }
+
+.verdict-false       { color: var(--accent-false);         background: rgba(239,68,68,0.08);   border-color: rgba(239,68,68,0.2); }
+.verdict-false .verdict-dot-new        { background: var(--accent-false); }
+
+.verdict-partial     { color: var(--accent-partial);       background: rgba(234,179,8,0.08);   border-color: rgba(234,179,8,0.2); }
+.verdict-partial .verdict-dot-new      { background: var(--accent-partial); }
+
+.verdict-unverifiable { color: var(--accent-unverifiable); background: rgba(139,92,246,0.08); border-color: rgba(139,92,246,0.2); }
+.verdict-unverifiable .verdict-dot-new { background: var(--accent-unverifiable); }
+
+.verdict-pending     { color: var(--text-tertiary);        background: var(--card-border);     border-color: transparent; }
+.verdict-pending .verdict-dot-new      { background: var(--text-tertiary); }
+
+.pulse-anim { animation: pulseGray 1.5s ease-in-out infinite; }
+
+.verdict-animate-in { animation: slideInCard 0.3s ease both; }
+
+/* ── Status Badge (Searching / Verifying) ── */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 12px;
+  white-space: nowrap;
+}
+
+.status-spinner {
+  width: 8px; height: 8px;
+  border: 1.5px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  display: inline-block;
+  animation: spinnerRotate 0.7s linear infinite;
+}
+
+.status-badge.searching { color: #60a5fa; background: rgba(96,165,250,0.08); border: 1px solid rgba(96,165,250,0.2); }
+.status-badge.verifying { color: var(--accent-partial); background: rgba(234,179,8,0.08); border: 1px solid rgba(234,179,8,0.2); }
+
+/* ── Confidence bar ── */
+.confidence-bar-track {
+  height: 2px;
+  background: var(--card-border);
+  border-radius: 2px;
+  margin: 0 14px 10px;
+  overflow: hidden;
+}
+
+.confidence-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.8s ease;
+}
+
+.conf-verdict-true        { background: var(--accent-true); }
+.conf-verdict-false       { background: var(--accent-false); }
+.conf-verdict-partial     { background: var(--accent-partial); }
+.conf-verdict-unverifiable { background: var(--accent-unverifiable); }
+
+/* ── Confidence inline text ── */
+.confidence-inline { display: flex; align-items: center; }
+.confidence-pct {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-tertiary);
+}
+
+/* ── Conflict icon ── */
+.conflict-icon { color: var(--accent-partial); flex-shrink: 0; }
+
+/* ── Expand chevron ── */
+.expand-chevron {
+  color: var(--text-tertiary);
+  display: flex;
+  align-items: center;
+  transition: transform 0.2s;
+}
+
+/* ── Expand / Collapse animation ── */
+.card-expandable {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s ease;
+}
+
+.card-expandable.card-open {
+  max-height: 2000px;
+}
+
+.card-expanded-inner {
+  padding: 0 14px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ── Sources (new, from real WS data) ── */
+.source-cards-new {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.source-card-new {
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: var(--input-bg);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  position: relative;
+}
+
+.source-meta-row-new {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.source-last-updated {
+  font-size: 0.66rem;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+}
+
+.source-card-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 2px;
+}
+
+.source-conf-pill {
+  font-size: 0.63rem;
+  font-weight: 700;
+  padding: 2px 9px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+}
+
+.conf-supports {
+  color: var(--accent-true);
+  background: rgba(16,185,129,0.08);
+  border-color: rgba(16,185,129,0.2);
+}
+
+.conf-contradicts {
+  color: var(--accent-false);
+  background: rgba(239,68,68,0.08);
+  border-color: rgba(239,68,68,0.2);
+}
+
+.source-title-link {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #3b82f6;
+  text-decoration: none;
+  line-height: 1.3;
+}
+.source-title-link:hover { text-decoration: underline; }
+
+.source-snippet-new {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.source-domain {
+  font-size: 0.68rem;
+  color: var(--text-tertiary);
+  margin-top: 2px;
+}
+
+/* ── Conflict amber box ── */
+.conflict-amber-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: rgba(234,179,8,0.06);
+  border: 1px solid rgba(234,179,8,0.25);
+  border-radius: 8px;
+  padding: 12px 14px;
+  color: var(--accent-partial);
+  font-size: 0.82rem;
+}
+
+.conflict-amber-box > svg { flex-shrink: 0; margin-top: 2px; }
+.conflict-amber-box strong { display: block; margin-bottom: 4px; }
+.conflict-amber-box p { margin: 0; color: var(--text-secondary); font-size: 0.8rem; }
+
+/* ── Card footer ── */
+.card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 10px;
+  border-top: 1px solid var(--card-border);
+}
+
+.copy-claim-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid var(--card-border);
+  padding: 4px 10px;
+  border-radius: 6px;
+  transition: all 0.15s;
+}
+.copy-claim-btn:hover {
+  background: var(--card-bg);
+  color: var(--text-primary);
+}
+
+/* ── Live claims section (container in ChatThread) ── */
+.live-claims-section {
+  padding: 8px 0;
+  display: flex;
+  flex-direction: column;
+}

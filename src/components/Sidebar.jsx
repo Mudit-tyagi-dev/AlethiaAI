@@ -4,24 +4,34 @@ import {
   FileText, X, MessageSquarePlus
 } from 'lucide-react';
 import '../styles/sidebar.css';
-import mockData from '../data/mockData';
 
-const SidebarItem = ({ icon, label, collapsed, onClick, active }) => {
-  return (
-    <button
-      className={`sidebar-nav-item ${active ? 'active' : ''} ${collapsed ? 'collapsed' : ''}`}
-      onClick={onClick}
-      title={collapsed ? label : ''}
-    >
-      <span className="nav-icon">{icon}</span>
-      {!collapsed && <span className="nav-label">{label}</span>}
-    </button>
-  );
+const SidebarItem = ({ icon, label, collapsed, onClick, active }) => (
+  <button
+    className={`sidebar-nav-item ${active ? 'active' : ''} ${collapsed ? 'collapsed' : ''}`}
+    onClick={onClick}
+    title={collapsed ? label : ''}
+  >
+    <span className="nav-icon">{icon}</span>
+    {!collapsed && <span className="nav-label">{label}</span>}
+  </button>
+);
+
+const formatSidebarDate = (iso) => {
+  try {
+    return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  } catch { return ''; }
 };
 
-const Sidebar = ({ isOpen, onClose, openSettings, onHomeClick, isCollapsed, onToggleCollapse }) => {
+const Sidebar = ({ isOpen, onClose, openSettings, onHomeClick, isCollapsed, onToggleCollapse, onReportClick, sidebarVersion }) => {
   const [showProfile, setShowProfile] = useState(false);
+  const [reports, setReports] = useState([]);
   const profileRef = useRef(null);
+
+  // Load reports from localStorage whenever sidebarVersion changes
+  useEffect(() => {
+    const stored = JSON.parse(localStorage.getItem('alethia_reports') || '[]');
+    setReports(stored);
+  }, [sidebarVersion]);
 
   useEffect(() => {
     const handleClick = (e) => {
@@ -41,12 +51,7 @@ const Sidebar = ({ isOpen, onClose, openSettings, onHomeClick, isCollapsed, onTo
       <aside className={`sidebar persistent ${isCollapsed ? 'sidebar-collapsed' : 'sidebar-expanded'}`}>
         {/* Header */}
         <div className="sidebar-header">
-          {!isCollapsed && (
-            <div className="logo">
-              {/* <span className="logo-symbol">◈</span>
-              <span className="logo-text">AlethiaAI</span> */}
-            </div>
-          )}
+          {!isCollapsed && <div className="logo" />}
           {isCollapsed && <span className="logo-symbol-only">◈</span>}
           <button
             className="collapse-toggle"
@@ -59,52 +64,52 @@ const Sidebar = ({ isOpen, onClose, openSettings, onHomeClick, isCollapsed, onTo
 
         {/* Nav */}
         <nav className="sidebar-nav">
-          <SidebarItem
-            icon={<Home size={18} />} label="Home"
-            collapsed={isCollapsed} onClick={onHomeClick}
-          />
-          <SidebarItem
-            icon={<Clock size={18} />} label="History"
-            collapsed={isCollapsed} onClick={() => {}}
-          />
-          <SidebarItem
-            icon={<Star size={18} />} label="Saved"
-            collapsed={isCollapsed} onClick={() => {}}
-          />
-          <SidebarItem
-            icon={<Tag size={18} />} label="Labels"
-            collapsed={isCollapsed} onClick={() => {}}
-          />
+          <SidebarItem icon={<Home size={18} />} label="Home" collapsed={isCollapsed} onClick={onHomeClick} />
+          <SidebarItem icon={<Clock size={18} />} label="History" collapsed={isCollapsed} onClick={() => {}} />
+          <SidebarItem icon={<Star size={18} />} label="Saved" collapsed={isCollapsed} onClick={() => {}} />
+          <SidebarItem icon={<Tag size={18} />} label="Labels" collapsed={isCollapsed} onClick={() => {}} />
 
           {!isCollapsed && (
             <>
               <div className="nav-section-title">Recent Reports</div>
-              <ul className="history-list">
-                {mockData.previousReports.map(report => (
-                  <li key={report.id} className="history-item" onClick={onClose}>
-                    <div className="history-title">
-                      <FileText size={13} className="history-icon" />
-                      {report.title}
-                    </div>
-                    <div className="history-meta">
-                      <span className="history-date">{report.date}</span>
-                      <span className={`history-score ${report.score >= 70 ? 'good' : report.score >= 40 ? 'warning' : 'bad'}`}>
-                        {report.score}%
-                      </span>
-                    </div>
-                  </li>
-                ))}
-              </ul>
+              {reports.length === 0 ? (
+                <div className="history-empty">No reports yet</div>
+              ) : (
+                <ul className="history-list">
+                  {reports.map(report => {
+                    const score = report.overall_score ?? 0;
+                    return (
+                      <li
+                        key={report.report_id}
+                        className="history-item"
+                        onClick={() => { onReportClick?.(report); onClose(); }}
+                      >
+                        <div className="history-title">
+                          <FileText size={13} className="history-icon" />
+                          <span className="history-title-text">{report.title}</span>
+                        </div>
+                        <div className="history-meta">
+                          <span className="history-date">{formatSidebarDate(report.date)}</span>
+                          <span className={`history-score ${score >= 70 ? 'good' : score >= 40 ? 'warning' : 'bad'}`}>
+                            {score}%
+                          </span>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
             </>
           )}
         </nav>
 
-        {/* Footer / Profile */}
+        {/* Footer */}
         <div className="sidebar-bottom">
           <SidebarItem
-            icon={<Settings size={18} />} label="Settings"
+            icon={<Settings size={18} />}
+            label="Settings"
             collapsed={isCollapsed}
-            onClick={() => { openSettings(); }}
+            onClick={() => openSettings()}
           />
 
           <div className="profile-area" ref={profileRef}>

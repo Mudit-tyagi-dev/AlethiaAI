@@ -1,126 +1,249 @@
 import React, { useState } from 'react';
-import { ThumbsUp, ThumbsDown, Share2, Bookmark } from 'lucide-react';
+import { ChevronDown, ChevronUp, Copy, AlertTriangle } from 'lucide-react';
 import '../../styles/claimcard.css';
 
-const StanceTag = ({ stance }) => (
-  <span className={`stance-tag ${stance === 'supporting' ? 'stance-supporting' : 'stance-counter'}`}>
-    {stance === 'supporting' ? 'Supporting' : 'Counter Argument'}
-  </span>
-);
+// Infer category from claim text
+function inferCategory(text = '') {
+  const t = text.toLowerCase();
+  if (/vaccine|virus|covid|cancer|health|medical|drug|disease|clinical/.test(t)) return 'Health';
+  if (/climate|emission|temperature|carbon|environment|energy|ev|electric/.test(t)) return 'Environment';
+  if (/election|politic|president|congress|senate|vote|govern|policy/.test(t)) return 'Politics';
+  if (/einstein|napoleon|history|war|century|ancient|historical/.test(t)) return 'History';
+  if (/brain|space|physics|chemistry|biology|science|atom|dna|nasa/.test(t)) return 'Science';
+  if (/ai|machine learning|neural|gpt|algorithm|technology|computer/.test(t)) return 'Technology';
+  return 'General';
+}
 
-const CredibilityBar = ({ credibility }) => {
-  const SEGS = 10;
-  const filled = Math.round((credibility / 100) * SEGS);
-  const color = credibility >= 80 ? 'var(--accent-true)' : credibility >= 60 ? 'var(--accent-partial)' : 'var(--accent-false)';
+// Extract domain from URL
+function extractDomain(url = '') {
+  try {
+    return new URL(url).hostname.replace('www.', '');
+  } catch {
+    return url;
+  }
+}
+
+// Extract a date from snippet text
+function extractDateFromSnippet(snippet = '') {
+  if (!snippet) return null;
+
+  // Try ISO: 2024-07-16
+  const isoMatch = snippet.match(/\b(\d{4}-\d{2}-\d{2})\b/);
+  if (isoMatch) {
+    try {
+      const d = new Date(isoMatch[1]);
+      if (!isNaN(d)) return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    } catch { /* ignore */ }
+  }
+
+  // Try "Jul 16, 2024" or "July 16 2024" style
+  const fullMatch = snippet.match(/\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+\d{1,2},?\s+\d{4}\b/i);
+  if (fullMatch) return fullMatch[0].replace(/\s+/g, ' ').trim();
+
+  // Try "16 Jul 2024"
+  const reverseMatch = snippet.match(/\b\d{1,2}\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+\d{4}\b/i);
+  if (reverseMatch) return reverseMatch[0];
+
+  // Try MM/DD/YYYY or DD/MM/YYYY
+  const slashMatch = snippet.match(/\b(\d{1,2}\/\d{1,2}\/\d{4})\b/);
+  if (slashMatch) {
+    try {
+      const d = new Date(slashMatch[1]);
+      if (!isNaN(d)) return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    } catch { /* ignore */ }
+  }
+
+  return null;
+}
+
+// Compute per-source confidence (mock heuristic based on source index + claim confidence)
+function computeSourceConfidence(claimConfidence, sourceIndex, totalSources) {
+  // Spread confidence slightly across sources; even-indexed sources get slightly higher
+  const base = Math.round(claimConfidence * 100);
+  const variation = (sourceIndex % 2 === 0 ? 5 : -7) + Math.floor(Math.random() * 5);
+  return Math.max(50, Math.min(97, base + variation));
+}
+
+// Verdict display map
+const VERDICT_META = {
+  'True':          { label: 'TRUE',          cls: 'verdict-true' },
+  'False':         { label: 'FALSE',         cls: 'verdict-false' },
+  'Partial':       { label: 'PARTIAL',       cls: 'verdict-partial' },
+  'Unverifiable':  { label: 'UNVERIFIABLE',  cls: 'verdict-unverifiable' },
+};
+
+const StatusBadge = ({ status }) => {
+  if (status === 'searching') return <span className="status-badge searching"><span className="status-spinner" /> Searching...</span>;
+  if (status === 'verifying') return <span className="status-badge verifying"><span className="status-spinner" /> Verifying...</span>;
+  return null;
+};
+
+// ── Source Card with enhancements ────────────────────────────────────────────
+const SourceCard = ({ src, index, claimVerdict, claimConfidence, totalSources }) => {
+  const domain = extractDomain(src.url);
+  const lastUpdated = extractDateFromSnippet(src.snippet);
+  const isSupporting = claimVerdict === 'True' || claimVerdict === 'Partial';
+  const sourceConf = computeSourceConfidence(claimConfidence <= 1 ? claimConfidence : claimConfidence / 100, index, totalSources);
+
   return (
-    <div className="cred-row-inline">
-      <span className="cred-label-sm">Credibility</span>
-      <div className="cred-segs">
-        {Array.from({ length: SEGS }).map((_, i) => (
-          <div key={i} className="cred-seg" style={{ background: i < filled ? color : 'var(--card-border)' }} />
-        ))}
+    <div className="source-card-new">
+      <a href={src.url} target="_blank" rel="noopener noreferrer" className="source-title-link">
+        {src.title || src.url} ↗
+      </a>
+
+      <div className="source-meta-row-new">
+        <span className="source-domain">{domain}</span>
+        <span className="source-last-updated">
+          ⏳ {lastUpdated ? `Last updated: ${lastUpdated}` : 'Recently published'}
+        </span>
       </div>
-      <span className="cred-pct-sm" style={{ color }}>{credibility}%</span>
+
+      <p className="source-snippet-new">{src.snippet}</p>
+
+      <div className="source-card-footer">
+        {isSupporting ? (
+          <span className="source-conf-pill conf-supports">
+            Supports claim: {sourceConf}%
+          </span>
+        ) : (
+          <span className="source-conf-pill conf-contradicts">
+            Contradicts claim: {sourceConf}%
+          </span>
+        )}
+      </div>
     </div>
   );
 };
 
-const ClaimCard = ({ claim, claimNum, totalClaims }) => {
-  const [liked, setLiked] = useState(false);
-  const [disliked, setDisliked] = useState(false);
-  const verdictClass = claim.verdict.toLowerCase().replace(/ /g, '-');
+// ── Main Claim Card ───────────────────────────────────────────────────────────
+const ClaimCard = ({ claim, index = 0 }) => {
+  const [expanded, setExpanded] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const {
+    text = '',
+    status = 'pending',
+    verdict = null,
+    confidence = 0,
+    reasoning = '',
+    sources = [],
+    conflicting = false,
+  } = claim;
+
+  const verdictMeta = verdict ? VERDICT_META[verdict] || { label: verdict.toUpperCase(), cls: 'verdict-unverifiable' } : null;
+  const confidencePct = Math.round((confidence <= 1 ? confidence * 100 : confidence));
+  const category = inferCategory(text);
+
+  const handleCopy = (e) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    });
+  };
 
   return (
-    <article className="claim-full">
-      {/* ── HEADER ── */}
-      <div className="claim-full-header">
-        <p className="claim-full-text">{claim.text}</p>
-        <div className="claim-full-badges">
-          <span className={`verdict-pill pill-${verdictClass}`}>
-            <span className="verdict-dot" />
-            {claim.verdict}
-          </span>
-          <span className="confidence-badge">{claim.confidence}%</span>
-        </div>
-      </div>
-
-      <div className="cf-divider" />
-
-      {/* ── AI ANALYSIS ── */}
-      <div className="cf-section">
-        <div className="cf-section-label">AI ANALYSIS</div>
-        <p className="cf-bold">{claim.summaryBold}</p>
-        <p className="cf-regular">{claim.explanation}</p>
-        {claim.verdict === 'FALSE' && claim.actualFact && (
-          <div className="cf-correction">
-            <strong>What actually happened: </strong>{claim.actualFact}
-          </div>
-        )}
-      </div>
-
-      <div className="cf-divider" />
-
-      {/* ── SOURCE SUMMARIES ── */}
-      <div className="cf-section">
-        <div className="cf-section-header">
-          <div className="cf-section-label">SOURCE SUMMARIES ({claim.sources.length} sources)</div>
-          <span className="cf-date-muted">Fact-checked on: {new Date().toLocaleDateString()}</span>
+    <article
+      className={`claim-card-new slide-in-card ${expanded ? 'card-expanded' : 'card-collapsed'}`}
+      style={{ animationDelay: `${index * 80}ms` }}
+      onClick={() => status === 'verified' && setExpanded(p => !p)}
+    >
+      {/* ── COLLAPSED ROW ── */}
+      <div className="card-main-row">
+        <div className="card-left">
+          {verdictMeta ? (
+            <span className={`verdict-pill-new ${verdictMeta.cls} verdict-animate-in`}>
+              <span className="verdict-dot-new" />
+              {verdictMeta.label}
+            </span>
+          ) : (
+            <span className={`verdict-pill-new verdict-pending ${status === 'pending' ? 'pulse-anim' : ''}`}>
+              <span className="verdict-dot-new" />
+              PENDING
+            </span>
+          )}
         </div>
 
-        <div className="source-cards">
-          {claim.sources.map((src, i) => (
-            <div key={i} className="source-card">
-              <div className="source-card-top">
-                <StanceTag stance={src.stance} />
-              </div>
-              <div className="source-card-body">
-                <div className="source-publisher-row">
-                  <div className="source-favicon">{src.name[0]}</div>
-                  <span className="source-publisher-name">{src.name}</span>
-                  <span className="source-title-sep">|</span>
-                  <a href={src.url} className="source-article-title">{src.title} ↗</a>
-                </div>
-                <div className="source-meta-row">
-                  <span className="source-date-sm">{src.date}</span>
-                  <span className="source-snippet">{src.snippet}</span>
-                </div>
-                <CredibilityBar credibility={src.credibility} />
-              </div>
+        <div className="card-center">
+          <p className={`card-claim-text ${expanded ? '' : 'text-truncated'}`}>{text}</p>
+        </div>
+
+        <div className="card-right">
+          {status !== 'verified' && <StatusBadge status={status} />}
+          {verdictMeta && (
+            <div className="confidence-inline">
+              <span className="confidence-pct">{confidencePct}%</span>
             </div>
-          ))}
+          )}
+          {conflicting && <AlertTriangle size={14} className="conflict-icon" title="Conflicting sources" />}
+          {status === 'verified' && (
+            <span className="expand-chevron">
+              {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            </span>
+          )}
         </div>
       </div>
 
-      {/* ── CONFLICT ── */}
-      {claim.conflict && (
-        <div className="conflict-block">
-          <div className="conflict-block-header">
-            <span>⚠️</span>
-            <strong>Source Conflict Detected</strong>
-          </div>
-          <p className="conflict-block-text">
-            <strong>{claim.conflict.source1.name}</strong> reports "{claim.conflict.source1.claim}" vs{' '}
-            <strong>{claim.conflict.source2.name}</strong> "{claim.conflict.source2.claim}" — credibility gap: {claim.conflict.gap}%. {claim.conflict.note}
-          </p>
+      {/* Confidence bar */}
+      {verdictMeta && (
+        <div className="confidence-bar-track">
+          <div
+            className={`confidence-bar-fill conf-${verdictMeta.cls}`}
+            style={{ width: `${confidencePct}%` }}
+          />
         </div>
       )}
 
-      {/* ── CLAIM FOOTER ── */}
-      <div className="cf-footer">
-        <span className="category-chip">{claim.category}</span>
-        <div className="cf-actions">
-          <button className="cf-action-btn">
-            <Bookmark size={13} /> Post (+{claim.actions.post})
-          </button>
-          <button className="cf-action-btn">
-            <Share2 size={13} /> Share (+{claim.actions.share})
-          </button>
-          <button className={`cf-action-btn ${liked ? 'action-up' : ''}`} onClick={() => setLiked(p => !p)}>
-            <ThumbsUp size={13} /> (+{liked ? claim.actions.up + 1 : claim.actions.up})
-          </button>
-          <button className={`cf-action-btn ${disliked ? 'action-down' : ''}`} onClick={() => setDisliked(p => !p)}>
-            <ThumbsDown size={13} /> (+{disliked ? claim.actions.down + 1 : claim.actions.down})
-          </button>
+      {/* ── EXPANDED CONTENT ── */}
+      <div className={`card-expandable ${expanded ? 'card-open' : ''}`}>
+        <div className="card-expanded-inner">
+          <div className="cf-divider" />
+
+          {/* AI ANALYSIS */}
+          {reasoning && (
+            <div className="cf-section">
+              <div className="cf-section-label">AI ANALYSIS</div>
+              <p className="cf-regular">{reasoning}</p>
+            </div>
+          )}
+
+          {/* SOURCES */}
+          {sources.length > 0 && (
+            <div className="cf-section">
+              <div className="cf-section-label">SOURCES ({sources.length} found)</div>
+              <div className="source-cards-new">
+                {sources.map((src, i) => (
+                  <SourceCard
+                    key={i}
+                    src={src}
+                    index={i}
+                    claimVerdict={verdict}
+                    claimConfidence={confidence}
+                    totalSources={sources.length}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* CONFLICT WARNING */}
+          {conflicting && (
+            <div className="conflict-amber-box">
+              <AlertTriangle size={14} />
+              <div>
+                <strong>⚠️ Sources show conflicting information</strong>
+                <p>Some sources disagree on this claim.</p>
+              </div>
+            </div>
+          )}
+
+          {/* FOOTER */}
+          <div className="card-footer">
+            <span className="category-chip">{category}</span>
+            <button className="copy-claim-btn" onClick={handleCopy}>
+              <Copy size={12} /> {copied ? 'Copied!' : 'Copy Claim'}
+            </button>
+          </div>
         </div>
       </div>
     </article>

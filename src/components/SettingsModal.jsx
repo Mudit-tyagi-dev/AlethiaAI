@@ -1,13 +1,33 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Settings as SettingsIcon, X, Moon, Sun, Monitor } from 'lucide-react';
 import '../styles/settings.css';
 
 const FONT_OPTIONS = ['Small', 'Medium', 'Large'];
 
-const SettingsModal = ({ onClose, theme, toggleTheme, fontSize, setFontSize }) => {
-  const [activeTab, setActiveTab] = useState('appearance');
+const SettingsModal = ({ onClose, theme, toggleTheme, fontSize, setFontSize, initialTab = 'appearance', warningMessage = '' }) => {
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [apiKey, setApiKey] = useState('');
   const [showKey, setShowKey] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  // Load API key from localStorage on mount
+  useEffect(() => {
+    const stored = localStorage.getItem('alethia_api_key') || '';
+    setApiKey(stored);
+  }, []);
+
+  // Update active tab when initialTab prop changes (re-opens)
+  useEffect(() => {
+    setActiveTab(initialTab);
+  }, [initialTab]);
+
+  const handleApiKeyChange = (e) => {
+    const val = e.target.value;
+    setApiKey(val);
+    localStorage.setItem('alethia_api_key', val);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 1500);
+  };
 
   return (
     <div className="settings-overlay">
@@ -35,20 +55,28 @@ const SettingsModal = ({ onClose, theme, toggleTheme, fontSize, setFontSize }) =
         <div className="settings-body">
           {activeTab === 'api' && (
             <div className="setting-group fade-in">
+              {warningMessage && (
+                <div className="api-key-warning">
+                  ⚠️ {warningMessage}
+                </div>
+              )}
               <label>OpenAI API Key</label>
               <div className="api-input-wrapper">
                 <input
                   type={showKey ? 'text' : 'password'}
                   value={apiKey}
-                  onChange={e => setApiKey(e.target.value)}
+                  onChange={handleApiKeyChange}
                   placeholder="sk-..."
                   className="custom-input"
+                  autoFocus
                 />
                 <button className="toggle-visibility" onClick={() => setShowKey(p => !p)}>
                   {showKey ? 'Hide' : 'Show'}
                 </button>
               </div>
-              <span className="setting-hint">Keys are stored locally in your browser</span>
+              <span className="setting-hint">
+                {saved ? '✓ Saved' : 'Keys are stored locally in your browser'}
+              </span>
             </div>
           )}
 
