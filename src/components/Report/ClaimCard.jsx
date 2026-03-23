@@ -114,6 +114,7 @@ const ClaimCard = ({ claim, index = 0 }) => {
     reasoning = '',
     sources = [],
     conflicting = false,
+    search_query = '',
   } = claim;
 
   const vm = verdict ? (VERDICT_MAP[verdict] || VERDICT_MAP['Unverifiable']) : null;
@@ -171,6 +172,12 @@ const ClaimCard = ({ claim, index = 0 }) => {
       <div className={`chat-card-expanded-content ${expanded ? 'show' : 'hide'}`}>
         <div className="chat-expanded-divider" />
         
+        {search_query && (
+          <div className="chat-metadata-row" onClick={(e) => e.stopPropagation()}>
+            🔍 Search Query: "{search_query}" • {sources.length} sources found
+          </div>
+        )}
+
         {vm && (
            <div className="chat-card-visual-meter">
               <MiniTruthBar score={confidencePct} color={vm.color} />

@@ -7,10 +7,21 @@ const TruthMeter = ({ score }) => {
   const glowId = `glow-${uniqueId}`;
 
   const isAvailable = score !== null && score !== undefined && !isNaN(score);
-  const displayScore = isAvailable ? Math.round(score) : 50;
+  const targetScore = isAvailable ? Math.round(score) : 50;
   
+  // Animation state to trigger on mount
+  const [animatedScore, setAnimatedScore] = React.useState(50);
+  
+  React.useEffect(() => {
+    // Small timeout to ensure transition triggers after mount
+    const timer = setTimeout(() => {
+      setAnimatedScore(targetScore);
+    }, 50);
+    return () => clearTimeout(timer);
+  }, [targetScore]);
+
   // Angle: -90 (0%) to 90 (100%)
-  const needleAngle = isAvailable ? -90 + (displayScore / 100) * 180 : 0;
+  const needleAngle = -90 + (animatedScore / 100) * 180;
 
   // Gradient colors
   const getColor = (val) => {
@@ -20,7 +31,7 @@ const TruthMeter = ({ score }) => {
     return 'var(--accent-true)'; // Green
   };
 
-  const currentColor = getColor(displayScore);
+  const currentColor = getColor(animatedScore);
 
   return (
     <div className="truth-meter-wrapper">
@@ -63,19 +74,18 @@ const TruthMeter = ({ score }) => {
           {/* Pivot Point Shadow/Base */}
           <circle cx="100" cy="110" r="8" fill="var(--overlay-bg)" opacity="0.4" />
           
-          {/* Needle - Using SVG transform attribute for maximum compatibility */}
+          {/* Needle - Using CSS transform for smooth animation with spring curve */}
           <g 
             className="truth-meter-needle-group"
-            transform={`rotate(${needleAngle} 100 110)`}
+            style={{ transform: `rotate(${needleAngle}deg)` }}
           >
             <line
               x1="100" y1="110"
-              x2="100" y2="30"
+              x2="100" y2="35"
               stroke={currentColor}
-              strokeWidth="3.5"
+              strokeWidth="5"
               strokeLinecap="round"
               filter={`url(#${glowId})`}
-              style={{ stroke: currentColor }}
             />
           </g>
 
@@ -98,7 +108,7 @@ const TruthMeter = ({ score }) => {
             className="meter-score-external" 
             style={{ color: currentColor, textShadow: isAvailable ? `0 0 20px ${currentColor}50` : 'none' }}
           >
-            {isAvailable ? `${displayScore}%` : '—'}
+            {isAvailable ? `${Math.round(animatedScore)}%` : '—'}
           </div>
           <div className="meter-label-external">TRUTH SCORE</div>
         </div>

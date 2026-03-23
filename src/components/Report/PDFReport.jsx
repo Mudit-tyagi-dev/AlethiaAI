@@ -242,6 +242,18 @@ const styles = StyleSheet.create({
     color: colors.muted,
     marginTop: 1,
   },
+  metadataRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 6,
+    borderTopWidth: 0.5,
+    borderTopColor: '#eeeeee',
+    borderBottomWidth: 0.5,
+    borderBottomColor: '#eeeeee',
+    marginBottom: 10,
+    fontSize: 9,
+    color: '#888888',
+  },
   stanceBadge: {
     fontSize: 7,
     fontWeight: 'bold',
@@ -426,43 +438,68 @@ const PDFReport = ({ reportData, query }) => {
         {/* CLAIMS SECTION */}
         <Text style={styles.sectionTitle}>Verified Claims</Text>
         <View style={styles.claimsList}>
-          {claims.map((claim, index) => (
-            <View key={index} style={[styles.claimCard, { borderLeftColor: getVerdictStyle(claim.verdict).backgroundColor, borderLeftWidth: 4 }]}>
-              <View style={styles.claimHeader}>
-                <Text style={styles.claimId}>CLAIM {(index + 1).toString().padStart(2, '0')}</Text>
-                <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
-                  <View style={[styles.verdictBadge, getVerdictStyle(claim.verdict)]}>
-                    <Text>{claim.verdict.toUpperCase()}</Text>
-                  </View>
-                  <Text style={styles.confidenceText}>{Math.round((claim.confidence <= 1 ? claim.confidence * 100 : claim.confidence))}% CONFIDENCE</Text>
-                </View>
-              </View>
-              
-              <Text style={styles.claimText}>{claim.claim_text}</Text>
-              
-              <View style={styles.reasoningBox}>
-                <Text style={styles.reasoningLabel}>AI Analysis & Reasoning</Text>
-                <Text style={styles.reasoningText}>{claim.reasoning}</Text>
-              </View>
-              
-              {claim.sources && claim.sources.length > 0 && (
-                <View style={styles.sourcesBox}>
-                  <Text style={styles.sourcesLabel}>Primary Sources</Text>
-                  {claim.sources.map((src, i) => (
-                    <View key={i} style={styles.sourceRow}>
-                      <View style={styles.sourceInfo}>
-                        <Link src={src.url} style={styles.sourceTitle}>{src.title || 'Source Reference'}</Link>
-                        <Text style={styles.sourceDomain}>{src.url ? new URL(src.url).hostname.replace('www.', '') : 'UnknownSource'}</Text>
-                      </View>
-                      <View style={[styles.stanceBadge, { backgroundColor: src.stance === 'Contradicts' ? 'rgba(229, 57, 53, 0.1)' : 'rgba(67, 160, 71, 0.1)', color: src.stance === 'Contradicts' ? colors.red : colors.green }]}>
-                        <Text>{src.stance === 'Contradicts' ? 'CONTRADICTS' : 'SUPPORTS'}</Text>
-                      </View>
+          {(claims || []).filter(Boolean).map((claim, index) => {
+            const verdict = claim.verdict || 'Unverifiable';
+            const claimText = claim.claim_text || claim.text || 'No claim text provided';
+            const confidence = claim.confidence || 0;
+            const reasoning = claim.reasoning || '';
+            const sources = claim.sources || [];
+            const searchQuery = claim.search_query || '';
+
+            return (
+              <View key={index} style={[styles.claimCard, { borderLeftColor: getVerdictStyle(verdict).backgroundColor, borderLeftWidth: 4 }]}>
+                <View style={styles.claimHeader}>
+                  <Text style={styles.claimId}>CLAIM {(index + 1).toString().padStart(2, '0')}</Text>
+                  <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
+                    <View style={[styles.verdictBadge, getVerdictStyle(verdict)]}>
+                      <Text>{verdict.toUpperCase()}</Text>
                     </View>
-                  ))}
+                    <Text style={styles.confidenceText}>
+                      {Math.round((confidence <= 1 ? confidence * 100 : confidence))}% CONFIDENCE
+                    </Text>
+                  </View>
                 </View>
-              )}
-            </View>
-          ))}
+                
+                <Text style={styles.claimText}>{claimText}</Text>
+                
+                {searchQuery && (
+                  <View style={styles.metadataRow}>
+                    <Text>🔍 Search Query: "{searchQuery}" • {sources.length} sources found</Text>
+                  </View>
+                )}
+
+                <View style={styles.reasoningBox}>
+                  <Text style={styles.reasoningLabel}>AI Analysis & Reasoning</Text>
+                  <Text style={styles.reasoningText}>{reasoning}</Text>
+                </View>
+                
+                {sources.length > 0 && (
+                  <View style={styles.sourcesBox}>
+                    <Text style={styles.sourcesLabel}>Primary Sources</Text>
+                    {sources.map((src, i) => (
+                      <View key={i} style={styles.sourceRow}>
+                        <View style={styles.sourceInfo}>
+                          <Link src={src.url || '#'} style={styles.sourceTitle}>{src.title || 'Source Reference'}</Link>
+                          <Text style={styles.sourceDomain}>
+                            {src.url ? src.url.replace(/^https?:\/\/(www\.)?/, '').split('/')[0] : 'Unknown Source'}
+                          </Text>
+                        </View>
+                        <View style={[
+                          styles.stanceBadge, 
+                          { 
+                            backgroundColor: src.stance === 'Contradicts' ? 'rgba(229, 57, 53, 0.1)' : 'rgba(67, 160, 71, 0.1)', 
+                            color: src.stance === 'Contradicts' ? colors.red : colors.green 
+                          }
+                        ]}>
+                          <Text>{(src.stance || 'Supports').toUpperCase()}</Text>
+                        </View>
+                      </View>
+                    ))}
+                  </View>
+                )}
+              </View>
+            );
+          })}
         </View>
 
         {/* FOOTER */}

@@ -159,7 +159,7 @@ const ChatThread = ({ openSettingsOnApiTab, onViewReport }) => {
 
             {isVerifying && currentQueryModeRef.current !== 'ai-text' && currentQueryModeRef.current !== 'ai-image' && currentQueryModeRef.current !== 'ai-pdf' && (
               <div className="ws-pipeline-block">
-                <div className="ws-stage-label">{stageLabel}</div>
+                {claimOrder.length === 0 && <div className="ws-stage-label">{stageLabel}</div>}
                 <div className="ws-progress-bar">
                   <div
                     className="ws-progress-fill"
@@ -167,6 +167,10 @@ const ChatThread = ({ openSettingsOnApiTab, onViewReport }) => {
                   />
                 </div>
               </div>
+            )}
+
+            {isVerifying && currentQueryModeRef.current === 'fact-check' && claimOrder.length > 0 && (
+              <LiveStatsCard claims={claims} claimOrder={claimOrder} query={currentQuery} />
             )}
 
             {isVerifying && currentQueryModeRef.current === 'ai-text' && (
@@ -533,6 +537,57 @@ const FinalReportBlock = ({ reportData, query, onViewReport }) => {
             View Report →
           </button>
         </div>
+      </div>
+    </div>
+  );
+};
+
+const LiveStatsCard = ({ claims, claimOrder, query }) => {
+  const claimsArray = claimOrder.map(id => claims[id]).filter(Boolean);
+  
+  // Debug log to see if verdicts are present
+  console.log('[LiveStatsCard] claimsArray:', claimsArray);
+  
+  const stats = {
+    total: claimsArray.length,
+    true: claimsArray.filter(c => c.verdict === "True").length,
+    false: claimsArray.filter(c => c.verdict === "False").length,
+    partial: claimsArray.filter(c => c.verdict === "Partial").length,
+    unverifiable: claimsArray.filter(c => c.verdict === "Unverifiable").length,
+  };
+
+  const kpiData = [
+    { label: 'Total',        value: stats.total,        type: 'total' },
+    { label: 'True',         value: stats.true,         type: 'true' },
+    { label: 'False',        value: stats.false,        type: 'false' },
+    { label: 'Partial',      value: stats.partial,      type: 'partial' },
+    { label: 'Unverifiable', value: stats.unverifiable, type: 'unverifiable' },
+  ];
+
+  return (
+    <div className="vc-card slideUpFadeIn live-stats-card" style={{ borderStyle: 'dashed', opacity: 0.9 }}>
+      <div className="vc-header">
+        <div className="vc-header-left">
+          <h3 className="vc-title">✦ Verification in Progress...</h3>
+          {query && <p className="vc-query">"Processing: {query}"</p>}
+        </div>
+        <div className="vc-timestamp">Live Updates</div>
+      </div>
+      <div className="vc-divider" />
+      <div className="vc-kpi-grid">
+        {kpiData.map((kpi) => (
+          <div key={kpi.label} className={`vc-kpi-cell vc-kpi-${kpi.type}`}>
+            <div className="vc-kpi-value">
+              <AnimatedKpi end={kpi.value} />
+            </div>
+            <div className="vc-kpi-label">
+              {kpi.type === 'true' && '✓ '}
+              {kpi.type === 'false' && '✗ '}
+              {kpi.type === 'partial' && '~ '}
+              {kpi.label}
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );

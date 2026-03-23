@@ -8,12 +8,12 @@ const ReportCard = ({ claim, total = 1, index = 0 }) => {
   // Build mini KPI for a single claim
   const kpis = {
     total: 1,
-    true: claim.verdict === 'TRUE' ? 1 : 0,
-    false: claim.verdict === 'FALSE' ? 1 : 0,
-    partial: claim.verdict === 'PARTIALLY TRUE' ? 1 : 0,
+    true: claim.verdict === 'True' ? 1 : 0,
+    false: claim.verdict === 'False' ? 1 : 0,
+    partial: claim.verdict === 'Partial' ? 1 : 0,
   };
 
-  const verdictToScore = { TRUE: 95, 'PARTIALLY TRUE': 60, FALSE: 15, UNVERIFIABLE: 40 };
+  const verdictToScore = { True: 95, Partial: 60, False: 15, Unverifiable: 40 };
   const truthScore = verdictToScore[claim.verdict] ?? 50;
 
   return (

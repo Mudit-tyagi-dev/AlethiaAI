@@ -24,6 +24,11 @@ const useWSStore = create((set, get) => ({
   }),
   setCurrentQuery: (query) => set({ currentQuery: query }),
   setFinalReport: (report) => set({ finalReport: report }),
+  markReportDeleted: () => set((state) => ({
+    finalReport: state.finalReport 
+      ? { ...state.finalReport, isDeleted: true }
+      : null
+  })),
   
   addClaim: (claim) => set((state) => ({
     claims: { 
@@ -33,15 +38,22 @@ const useWSStore = create((set, get) => ({
     claimOrder: state.claimOrder.includes(claim.claim_id) ? state.claimOrder : [...state.claimOrder, claim.claim_id]
   })),
   
-  updateClaim: (claim_id, data) => set((state) => ({
-    claims: {
-      ...state.claims,
-      [claim_id]: { 
-        ...(state.claims[claim_id] || {}), 
-        ...data 
-      }
-    }
-  })),
+  updateClaim: (claim_id, data) => set((state) => {
+    const updatedClaim = { 
+      ...(state.claims[claim_id] || {}), 
+      ...data 
+    };
+    
+    const isNew = !state.claimOrder.includes(claim_id);
+    
+    return {
+      claims: {
+        ...state.claims,
+        [claim_id]: updatedClaim
+      },
+      claimOrder: isNew ? [...state.claimOrder, claim_id] : state.claimOrder
+    };
+  }),
 
   addMessage: (message) => set((state) => ({ 
     messages: [...state.messages, message] 

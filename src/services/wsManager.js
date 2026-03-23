@@ -71,6 +71,7 @@ const handleMessage = (data) => {
   }
 
   if (data.event === 'claim_verified') {
+    console.log(`[WS] claim_verified received:`, data);
     store.updateClaim(data.claim_id, {
       verdict: data.verdict,
       confidence: data.confidence,
@@ -98,6 +99,23 @@ const handleMessage = (data) => {
     const partialCount = data['partial'] ?? 0;
     const unverifiableCount = data['unverifiable'] ?? 0;
     const title = store.currentQuery?.substring(0, 40) || 'Report';
+    const finalClaims = {};
+    const finalOrder = [];
+    if (data.claims) {
+      data.claims.forEach(c => {
+        const claimId = c.claim_id || c.id;
+        finalClaims[claimId] = { 
+          ...c, 
+          claim_id: claimId,
+          status: 'verified' 
+        };
+        finalOrder.push(claimId);
+      });
+    }
+
+    // Debug log to inspect backend claim structure
+    console.log('[report_done] first claim:', data.claims?.[0]);
+
     const reportObj = {
       report_id: data.report_id,
       overall_score: data.overall_score,
@@ -107,12 +125,22 @@ const handleMessage = (data) => {
       false_count: falseCount,
       partial_count: partialCount,
       unverifiable_count: unverifiableCount,
-      claims: data.claims || [],
+      claims: (data.claims || []).map(c => ({
+        ...c,
+        claim_id: c.claim_id || c.id
+      })),
       date: new Date().toISOString(),
       title: title,
       query: store.currentQuery || ''
     };
+
+    useWSStore.setState({
+      claims: finalClaims,
+      claimOrder: finalOrder,
+      finalReport: reportObj,
+      isProcessing: false
+    });
+
     useReportStore.getState().addReport(reportObj);
-    store.setFinalReport(reportObj);
   }
 };

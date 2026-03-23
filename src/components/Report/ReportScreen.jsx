@@ -157,6 +157,7 @@ const RSClaimCard = ({ claim, index, total, style }) => {
     reasoning = '',
     sources = [],
     conflicting = false,
+    search_query = '',
   } = claim;
 
   const vm = VERDICT_MAP[verdict] || VERDICT_MAP['Unverifiable'];
@@ -195,6 +196,12 @@ const RSClaimCard = ({ claim, index, total, style }) => {
       <div className="rs-claim-visual-meter">
         <MiniTruthBar score={pct} color={vm.color} />
       </div>
+
+      {search_query && (
+        <div className="rs-metadata-row">
+          🔍 Search Query: "{search_query}" • {sources.length} sources found
+        </div>
+      )}
 
       {conflicting && (
         <div className="rs-conflict-alert">
@@ -276,6 +283,7 @@ const RSClaimCard = ({ claim, index, total, style }) => {
 /* ─── REPORT SCREEN (main export) ────────────────────────────────────────── */
 const ReportScreen = ({ reportData, query, onBack }) => {
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const apiKey = useAppStore((s) => s.apiKey) || localStorage.getItem('factly_api_key') || '';
 
   // 1. STATS CARDS — Calculate from claims array directly
@@ -320,8 +328,55 @@ const ReportScreen = ({ reportData, query, onBack }) => {
     URL.revokeObjectURL(url);
   };
 
+  const handleDelete = async () => {
+    setIsDeleting(true);
+    try {
+      await destroyReport(reportData.id || reportData.report_id, apiKey);
+      useReportStore.getState().removeReport(reportData.id || reportData.report_id);
+      useWSStore.getState().markReportDeleted();
+      setShowDeleteModal(false);
+      onBack();
+    } catch (err) {
+      console.error("Delete failed:", err);
+      setIsDeleting(false);
+      setShowDeleteModal(false);
+    }
+  };
+
   return (
     <div className="rs-screen-v2">
+      {/* ── Custom Delete Modal ── */}
+      {showDeleteModal && (
+        <div className="rs-modal-overlay" onClick={() => !isDeleting && setShowDeleteModal(false)}>
+          <div className="rs-modal-card" onClick={e => e.stopPropagation()}>
+            <div className="rs-modal-icon-container">
+              <Trash2 size={32} />
+            </div>
+            <h3 className="rs-modal-title">Delete Report</h3>
+            <p className="rs-modal-message">
+              Are you sure you want to permanently delete this report? 
+              This action cannot be undone.
+            </p>
+            <div className="rs-modal-actions">
+              <button 
+                className="modal-btn cancel" 
+                onClick={() => setShowDeleteModal(false)}
+                disabled={isDeleting}
+              >
+                Cancel
+              </button>
+              <button 
+                className="modal-btn delete" 
+                onClick={handleDelete}
+                disabled={isDeleting}
+              >
+                {isDeleting ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── Top Navigation ── */}
       <div className="rs-nav-v2">
         <button className="rs-back-btn-v2" onClick={onBack}>
@@ -331,19 +386,7 @@ const ReportScreen = ({ reportData, query, onBack }) => {
         <div className="rs-nav-actions-v2">
           <button 
             className="rs-nav-btn-v2 delete"
-            onClick={async () => {
-              if (!window.confirm("Delete this report permanently?")) return;
-              setIsDeleting(true);
-              try {
-                await destroyReport(reportData.id || reportData.report_id, apiKey);
-                useReportStore.getState().removeReport(reportData.id || reportData.report_id);
-                useWSStore.getState().markReportDeleted(reportData.id || reportData.report_id);
-                onBack();
-              } catch (err) {
-                alert("Failed to delete: " + err.message);
-                setIsDeleting(false);
-              }
-            }}
+            onClick={() => setShowDeleteModal(true)}
             disabled={isDeleting}
           >
             <Trash2 size={14} />
