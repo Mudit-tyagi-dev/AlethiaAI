@@ -1,0 +1,126 @@
+/* src/styles/chatthread.css */
+
+.ct-verification-error-container {
+  padding: 16px;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 12px;
+  color: var(--accent-false, #ef4444);
+  margin: 12px 0;
+}
+
+.ct-verification-error-title {
+  font-weight: 700;
+  margin-bottom: 4px;
+  font-size: 0.9rem;
+}
+
+.ct-verification-error-msg {
+  font-size: 0.85rem;
+}
+
+.ct-report-deleted-container {
+  border: 1px dashed rgba(239, 68, 68, 0.4);
+  background: rgba(255, 255, 255, 0.02);
+  padding: 20px;
+  border-radius: 16px;
+  color: var(--text-secondary);
+  width: 100%;
+  margin-top: 10px;
+  align-self: stretch;
+}
+
+[data-theme="light"] .ct-report-deleted-container {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.ct-report-deleted-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  color: var(--accent-false, #ef4444);
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.ct-report-deleted-query {
+  margin-bottom: 8px;
+  font-size: 1.05rem;
+  color: var(--text-primary);
+}
+
+.ct-report-deleted-desc {
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+
+.ct-reverify-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.ct-reverify-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="light"] .ct-reverify-btn {
+  background: rgba(0, 0, 0, 0.05);
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .ct-reverify-btn:hover {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+
+/* AI Result Layout Overrides */
+
+.ct-ai-text-title {
+  margin-top: 8px;
+}
+
+.ct-ai-gauge-wrapper {
+  width: 130px;
+  height: 70px;
+  margin: 0;
+}
+
+.ct-ai-gauge-needle {
+  bottom: 8px;
+  height: 55px;
+}
+
+.ct-ai-needle-base {
+  bottom: -5px;
+  width: 10px;
+  height: 10px;
+  left: -3px;
+}
+
+.ct-ai-needle-point {
+  height: 55px;
+  width: 3px;
+}
+
+.ct-ai-gauge-center {
+  bottom: -6px;
+}
+
+.ct-ai-gauge-score {
+  font-size: 1.5rem;
+}
+
+.ct-ai-gauge-label {
+  font-size: 0.45rem;
+}

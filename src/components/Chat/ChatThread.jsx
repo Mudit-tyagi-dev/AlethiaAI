@@ -4,6 +4,7 @@ import InputBar from './InputBar';
 import LandingScreen from '../LandingScreen';
 import '../../styles/chatbox.css';
 import '../../styles/landing.css';
+import '../../styles/chatthread.css';
 import useReportStore from '../../store/useReportStore';
 import useWSStore from '../../store/useWSStore';
 import useAppStore from '../../store/useAppStore';
@@ -36,15 +37,17 @@ const ChatThread = ({ openSettingsOnApiTab, onViewReport }) => {
   const claimOrder = useWSStore((s) => s.claimOrder);
   const finalReport = useWSStore((s) => s.finalReport);
   const currentQuery = useWSStore((s) => s.currentQuery);
-  const isVerifying = isProcessing && !finalReport;
-
-  const stageLabel = pipelineStage ? (STAGE_LABELS[pipelineStage] || pipelineStage) : '⚡ Processing...';
+  const error = useWSStore((s) => s.error);
+  const isVerifying = isProcessing && !finalReport && !error;
 
   // Local State
   const [replyRequest, setReplyRequest] = useState(null);
   const [inputFocusRequest, setInputFocusRequest] = useState(null);
   const [inputMode, setInputMode] = useState('fact-check');
   const [toastMessage, setToastMessage] = useState('');
+
+  const defaultStage = inputMode !== 'fact-check' ? '🔬 Analyzing...' : '⚡ Processing...';
+  const stageLabel = pipelineStage ? (STAGE_LABELS[pipelineStage] || pipelineStage) : defaultStage;
   const [showTimeoutWarning, setShowTimeoutWarning] = useState(false);
   const [showReconnectBanner, setShowReconnectBanner] = useState(false); // To satisfy old usages
 
@@ -106,16 +109,30 @@ const ChatThread = ({ openSettingsOnApiTab, onViewReport }) => {
            result = await detectPdf(textOrFile, apiKey);
         }
         
+        const previewUrl = (inputMode === 'ai-image' && typeof textOrFile !== 'string') 
+            ? URL.createObjectURL(textOrFile) 
+            : null;
+
         const reportObj = {
           report_id: result.id,
           ai_text_probability: result.ai_probability, 
+          result_status: result.result,
+          confidence: result.confidence,
+          signals: result.signals,
+          processing_time_ms: result.processing_time_ms,
+          previewUrl
         };
         store.setProcessing(false);
         store.setFinalReport(reportObj);
       }
     } catch (err) {
       console.error('API/WS Error:', err);
-      showToast('Connection error. Please try again.');
+      // Fetch throws TypeError on network failure
+      if (err.name === 'TypeError' || err.message === 'Failed to fetch') {
+        showToast('Could not connect');
+      } else {
+        showToast(err.message || 'Server error, try again');
+      }
       store.setProcessing(false);
     }
   }, [openSettingsOnApiTab, showToast, inputMode]);
@@ -143,7 +160,14 @@ const ChatThread = ({ openSettingsOnApiTab, onViewReport }) => {
               <MessageBubble key={msg.id} message={msg} onReply={handleReplyRequest} />
             ))}
 
-            {isVerifying && (
+            {error && (
+              <div className="ct-verification-error-container">
+                <div className="ct-verification-error-title">Verification Error</div>
+                <div className="ct-verification-error-msg">{error}</div>
+              </div>
+            )}
+
+            {isVerifying && currentQueryModeRef.current !== 'ai-text' && currentQueryModeRef.current !== 'ai-image' && currentQueryModeRef.current !== 'ai-pdf' && (
               <div className="ws-pipeline-block">
                 <div className="ws-stage-label">{stageLabel}</div>
                 <div className="ws-progress-bar">
@@ -153,6 +177,10 @@ const ChatThread = ({ openSettingsOnApiTab, onViewReport }) => {
                   />
                 </div>
               </div>
+            )}
+
+            {isVerifying && currentQueryModeRef.current === 'ai-text' && (
+              <AITextAnalyzingCard />
             )}
 
             {/* In AI Text Mode, DO NOT show claims */}
@@ -174,8 +202,26 @@ const ChatThread = ({ openSettingsOnApiTab, onViewReport }) => {
 
             {/* Final Report */}
             {finalReport && (
-              currentQueryModeRef.current !== 'fact-check' ? (
-                <AITextResultCard reportData={finalReport} query={currentQuery} mode={currentQueryModeRef.current} />
+              finalReport.isDeleted ? (
+                <div className="ct-report-deleted-container">
+                  <div className="ct-report-deleted-title">
+                    🗑️ Report Deleted
+                  </div>
+                  <div className="ct-report-deleted-query">
+                    <strong>Query:</strong> "{currentQuery || 'this claim'}"
+                  </div>
+                  <div className="ct-report-deleted-desc">
+                    This report has been deleted.
+                  </div>
+                  <button 
+                    onClick={() => handleReplyRequest(currentQuery)}
+                    className="ct-reverify-btn"
+                  >
+                    🔄 Re-verify this claim
+                  </button>
+                </div>
+              ) : currentQueryModeRef.current !== 'fact-check' ? (
+                <AIDetectionResultCard reportData={finalReport} query={currentQuery} mode={currentQueryModeRef.current} />
               ) : (
                 <FinalReportBlock
                   reportData={finalReport}
@@ -218,78 +264,141 @@ const LiveClaimCard = ({ claim, index }) => {
   return <LiveClaimCardComponent claim={claim} index={index} />;
 };
 
+// ─── AI Text Analyzing Card ──────────────────────────────────────────────────
+const AITextAnalyzingCard = () => {
+  const [msgIdx, setMsgIdx] = useState(0);
+  const messages = [
+    "Scanning writing patterns...",
+    "Checking sentence structure...",
+    "Comparing AI signatures...",
+    "Finalizing analysis..."
+  ];
 
-// ─── AI Text/Image/PDF Result Card ──────────────────────────────────────────
-const AITextResultCard = ({ reportData, query, mode }) => {
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setMsgIdx(prev => (prev + 1) % messages.length);
+    }, 2000);
+    return () => clearInterval(timer);
+  }, [messages.length]);
+
+  return (
+    <div className="ai-text-analyzing-card">
+      <div className="ai-analyzing-title">🤖 Analysing Text...</div>
+      <div className="ai-analyzing-shimmer-bar">
+        <div className="ai-analyzing-shimmer-fill" />
+      </div>
+      <div className="ai-analyzing-msg">{messages[msgIdx]}</div>
+    </div>
+  );
+};
+
+
+// ─── AI Detection Result Card ──────────────────────────────────────────────────
+const AIDetectionResultCard = ({ reportData, query, mode }) => {
+  const [animTime, setAnimTime] = useState(0);
   const [animProb, setAnimProb] = useState(0);
-  const aiProb = Math.round((reportData.ai_text_probability || 0) * 100);
+  
+  const aiProb = Math.round((reportData.confidence || 0) * 100);
+  const totalTimeSec = ((reportData.processing_time_ms || 0) / 1000).toFixed(1);
+  const resultStatus = reportData.result_status || 'uncertain';
+  const signals = reportData.signals || [];
   
   useEffect(() => {
-    const timer = setTimeout(() => setAnimProb(aiProb), 100);
-    return () => clearTimeout(timer);
-  }, [aiProb]);
+    let startTime = null;
+    const animate = (t) => {
+      if (!startTime) startTime = t;
+      const progress = Math.min((t - startTime) / 800, 1);
+      const ease = 1 - Math.pow(1 - progress, 4);
+      setAnimTime((ease * parseFloat(totalTimeSec)).toFixed(1));
+      setAnimProb(Math.round(ease * aiProb));
+      if (progress < 1) requestAnimationFrame(animate);
+    };
+    requestAnimationFrame(animate);
+  }, [totalTimeSec, aiProb]);
 
-  let typeName = mode === 'ai-image' ? 'image' : mode === 'ai-pdf' ? 'document' : 'text';
-  let label = `Likely Authentic/Human`;
-  let colorClass = "ai-human";
-  let explanation = `This ${typeName} shows strong characteristics of being human-created/authentic.`;
+  let typeName = mode === 'ai-image' ? 'Image' : mode === 'ai-pdf' ? 'Document' : 'Text';
+  let label = 'Uncertain / Mixed Signals';
+  let colorClass = 'ai-mixed';
+  let headerIcon = '🟡';
+  let titleIcon = mode === 'ai-image' ? '' : mode === 'ai-pdf' ? '📄' : '';
   
-  if (aiProb >= 70) {
-    label = "Likely AI Generated";
-    colorClass = "ai-ai";
-    explanation = `This ${typeName} shows strong patterns typical of AI generation.`;
-  } else if (aiProb >= 30) {
-    label = "Uncertain / Mixed";
-    colorClass = "ai-mixed";
-    // Exact wording requested previously + some generalization
-    explanation = `This ${typeName} shows mixed signals — could be authentic or AI generated.`;
+  if (resultStatus === 'ai_generated') {
+    label = `Likely AI Generated ${typeName}`;
+    colorClass = 'ai-ai';
+    headerIcon = '🔴';
+  } else if (resultStatus === 'human_written') {
+    label = mode === 'ai-image' ? 'Likely Real Image' : `Likely Human Written ${typeName}`;
+    colorClass = 'ai-human';
+    headerIcon = '🟢';
   }
 
   const rotation = (animProb / 100) * 180 - 90;
 
   return (
-    <div className={`ai-text-result-card ${colorClass}`}>
-      <div className="ai-text-header">
-        <span className="ai-text-title">
-          {mode === 'ai-image' ? '🤖 AI Image Analysis' : mode === 'ai-pdf' ? '🤖 AI PDF Analysis' : '🤖 AI Text Analysis'}
-        </span>
-        <span className="ai-text-query">"{query.substring(0, 60)}{query.length > 60 ? '...' : ''}"</span>
-      </div>
+      <div className={`ai-text-result-card ${colorClass}`}>
+        <div className="ai-img-header-row">
+          <div className="ai-img-header-left">
+            <div className={`ai-img-badge ai-banner-${colorClass}`}>
+              {headerIcon} {label}
+            </div>
+            <div className="ai-text-title ct-ai-text-title">{titleIcon} AI {typeName} Analysis</div>
+            {mode === 'ai-text' ? (
+              <div className="ai-text-query-scrollable">{query}</div>
+            ) : (
+              <div className="ai-text-query">{query}</div>
+            )}
+          </div>
+          
+          <div className="ai-img-header-right">
+            <div className="ai-text-gauge-container ct-ai-gauge-wrapper">
+              <svg viewBox="0 0 200 110" className="ai-gauge-svg">
+                <path d="M 15 95 A 80 80 0 0 1 185 95" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="16" strokeLinecap="round" />
+                <defs>
+                  <linearGradient id="aiGaugeGradImage" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stopColor="#10b981" />
+                    <stop offset="50%" stopColor="#eab308" />
+                    <stop offset="100%" stopColor="#ef4444" />
+                  </linearGradient>
+                </defs>
+                <path d="M 15 95 A 80 80 0 0 1 185 95" fill="none" stroke="url(#aiGaugeGradImage)" strokeWidth="16" strokeLinecap="round" 
+                  strokeDasharray="251.2" strokeDashoffset={251.2 - (251.2 * animProb / 100)} 
+                  className="ai-gauge-fill-path" />
+              </svg>
+              <div className="ai-gauge-needle ct-ai-gauge-needle" style={{ transform: `rotate(${rotation}deg)` }}>
+                <div className="ai-needle-base ct-ai-needle-base"></div>
+                <div className="ai-needle-point ct-ai-needle-point"></div>
+              </div>
+              
+              <div className="ai-gauge-center-text ct-ai-gauge-center">
+                <div className="ai-gauge-score ct-ai-gauge-score">{animProb}%</div>
+                <div className="ai-gauge-label ct-ai-gauge-label">PROBABILITY</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      
       <div className="ai-text-divider" />
       
-      <div className="ai-text-gauge-container">
-        <svg viewBox="0 0 200 110" className="ai-gauge-svg">
-          <path d="M 15 95 A 80 80 0 0 1 185 95" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="16" strokeLinecap="round" />
-          <defs>
-            <linearGradient id="aiGaugeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#10b981" />
-              <stop offset="50%" stopColor="#eab308" />
-              <stop offset="100%" stopColor="#ef4444" />
-            </linearGradient>
-          </defs>
-          <path d="M 15 95 A 80 80 0 0 1 185 95" fill="none" stroke="url(#aiGaugeGrad)" strokeWidth="16" strokeLinecap="round" 
-            strokeDasharray="251.2" strokeDashoffset={251.2 - (251.2 * animProb / 100)} 
-            className="ai-gauge-fill-path" />
-        </svg>
-        <div className="ai-gauge-needle" style={{ transform: `rotate(${rotation}deg)` }}>
-          <div className="ai-needle-base"></div>
-          <div className="ai-needle-point"></div>
+      {reportData.previewUrl && (
+        <div className="ai-img-preview-container">
+          <img src={reportData.previewUrl} alt="Analyzed" />
         </div>
-        
-        <div className="ai-gauge-center-text">
-          <div className="ai-gauge-score">{animProb}%</div>
-          <div className="ai-gauge-label">AI GENERATED PROBABILITY</div>
-        </div>
-      </div>
+      )}
 
-      <div className={`ai-text-verdict ai-banner-${colorClass}`}>
-        {aiProb < 30 ? '🟢 ' : aiProb >= 70 ? '🔴 ' : '🟡 '}{label}
-      </div>
+      {signals && signals.length > 0 && (
+        <div className="ai-img-signals-container">
+          <div className="ai-img-signals-title">🔬 Detection Reasoning</div>
+          <ul className="ai-img-signals-list">
+            {signals.map((sig, i) => (
+              <li key={i}>{sig}</li>
+            ))}
+          </ul>
+        </div>
+      )}
       
-      <p className="ai-text-explanation">{explanation}</p>
-      
-      <div className="ai-text-timestamp">
-        Analyzed: {new Date().toLocaleString()}
+      <div className="ai-img-footer">
+        <span className="ai-img-time-badge">⏱️ {animTime}s</span>
+        <span className="ai-text-timestamp">Analyzed: {new Date().toLocaleString()}</span>
       </div>
     </div>
   );
@@ -369,7 +478,7 @@ const FinalReportBlock = ({ reportData, query, onViewReport }) => {
       <div className="frb-divider" />
 
       <div className="frb-ai-row" style={{ background: aiProbBg }}>
-        <span className="frb-ai-left">🤖 AI Text Probability</span>
+        <span className="frb-ai-left">AI Text Probability</span>
         <span className="frb-ai-badge" style={{ color: aiProbColor, borderColor: aiProbColor }}>
           {aiProbText}
         </span>

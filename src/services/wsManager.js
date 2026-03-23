@@ -58,6 +58,19 @@ export const sendMessage = async (payload) => {
 const handleMessage = (data) => {
   const store = useWSStore.getState();
   
+  if (data.event === 'error') {
+    store.setError(data.message);
+    store.setProcessing(false);
+    
+    const claims = store.claims;
+    Object.keys(claims).forEach(id => {
+      const claim = claims[id];
+      if (claim.status === 'searching' || claim.status === 'verifying') {
+        store.updateClaim(id, { status: 'error' });
+      }
+    });
+  }
+
   if (data.event === 'stage') {
     store.setPipeline(data.stage, data.progress * 100);
   }

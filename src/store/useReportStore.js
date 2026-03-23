@@ -13,6 +13,9 @@ const useReportStore = create(
         })),
       setCurrentReport: (report) => set({ currentReport: report }),
       getReportById: (id) => get().reports.find((r) => r.report_id === id) || null,
+      removeReport: (report_id) => set((state) => ({
+        reports: state.reports.filter((r) => r.report_id !== report_id)
+      })),
     }),
     {
       name: 'alethia-reports',

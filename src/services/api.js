@@ -47,7 +47,7 @@ export const detectText = async (text, apiKey) => {
       'Content-Type': 'application/json',
       'x-api-key': apiKey
     },
-    body: JSON.stringify({ text })
+    body: JSON.stringify({ text, api_key: apiKey })
   });
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
@@ -59,6 +59,7 @@ export const detectText = async (text, apiKey) => {
 export const detectImage = async (file, apiKey) => {
   const formData = new FormData();
   formData.append('file', file);
+  formData.append('api_key', apiKey);
 
   const res = await fetch(`${BASE_URL}/detect/image`, {
     method: 'POST',
@@ -68,6 +69,8 @@ export const detectImage = async (file, apiKey) => {
     body: formData
   });
   if (!res.ok) {
+    if (res.status === 422) throw new Error('Invalid file format');
+    if (res.status >= 500) throw new Error('Server error, try again');
     const errorData = await res.json().catch(() => ({}));
     throw new Error(errorData.detail || 'Failed to analyze image');
   }
@@ -77,6 +80,7 @@ export const detectImage = async (file, apiKey) => {
 export const detectPdf = async (file, apiKey) => {
   const formData = new FormData();
   formData.append('file', file);
+  formData.append('api_key', apiKey);
 
   const res = await fetch(`${BASE_URL}/detect/pdf`, {
     method: 'POST',
@@ -86,6 +90,8 @@ export const detectPdf = async (file, apiKey) => {
     body: formData
   });
   if (!res.ok) {
+    if (res.status === 422) throw new Error('Invalid file format');
+    if (res.status >= 500) throw new Error('Server error, try again');
     const errorData = await res.json().catch(() => ({}));
     throw new Error(errorData.detail || 'Failed to analyze pdf');
   }

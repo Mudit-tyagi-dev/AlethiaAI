@@ -3,6 +3,7 @@ import { ArrowLeft, Download, AlertTriangle, Copy, Check, Trash2 } from 'lucide-
 import '../../styles/reportscreen.css';
 import useReportStore from '../../store/useReportStore';
 import useAppStore from '../../store/useAppStore';
+import useWSStore from '../../store/useWSStore';
 import { destroyReport } from '../../services/api';
 
 /* ─── Helpers ─────────────────────────────────────────────────────────────── */
@@ -379,6 +380,7 @@ const ReportScreen = ({ reportData, query, onBack }) => {
             try {
               await destroyReport(reportData.report_id, apiKey);
               useReportStore.getState().removeReport(reportData.report_id);
+              useWSStore.getState().markReportDeleted(reportData.report_id);
               onBack();
             } catch (err) {
               alert("Failed to delete report: " + err.message);

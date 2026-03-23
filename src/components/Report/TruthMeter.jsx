@@ -28,9 +28,9 @@ const TruthMeter = ({ score }) => {
 
   return (
     <div className="truth-meter-container">
-      <div className="truth-meter-labels">
-        <span className="tm-label-false">FALSE</span>
-        <span className="tm-label-true">TRUE</span>
+      <div className="truth-meter-labels" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+        <span className="tm-label-false" style={{ color: '#ef4444', fontWeight: 'bold' }}>FALSE</span>
+        <span className="tm-label-true" style={{ color: '#10b981', fontWeight: 'bold' }}>TRUE</span>
       </div>
       <div className="truth-meter-bar">
         {Array.from({ length: SEGMENTS }).map((_, i) => (
@@ -44,9 +44,9 @@ const TruthMeter = ({ score }) => {
           />
         ))}
       </div>
-      <div className="truth-score-row">
-        <span className="truth-score-pct" style={{ color }}>{animatedScore}%</span>
-        <span className="truth-meter-label">TRUTH SCORE</span>
+      <div className="truth-score-row" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '12px' }}>
+        <span className="truth-score-pct" style={{ color, fontSize: '1.4rem', fontWeight: 'bold', lineHeight: '1.2' }}>{animatedScore}%</span>
+        <span className="truth-meter-label" style={{ fontSize: '0.65rem', color: 'var(--text-tertiary)', fontWeight: 'bold', marginTop: '2px', letterSpacing: '0.5px' }}>TRUTH SCORE</span>
       </div>
     </div>
   );

@@ -57,7 +57,7 @@ const MessageBubble = ({ message, onReply }) => {
               </div>
               {aiProb > 0 && (
                 <div className="ai-prob-badge" style={{ borderColor: aiProbColor, color: aiProbColor }}>
-                  🤖 AI Generated Probability: {aiProb}%
+                  AI Generated Probability: {aiProb}%
                 </div>
               )}
             </div>
@@ -77,6 +77,54 @@ const MessageBubble = ({ message, onReply }) => {
             ))}
 
             <div className="report-footer">Verified by AlethiaAI</div>
+          </div>
+          {ts}
+        </div>
+      </div>
+    );
+  }
+
+  if (message.type === 'report_deleted') {
+    return (
+      <div className="message message-ai slideUpFadeIn">
+        <div className="avatar ai-avatar" style={{ filter: 'grayscale(1)', opacity: 0.5 }}>◈</div>
+        <div className="message-content-wrapper">
+          <div style={{
+            border: '1px dashed rgba(239, 68, 68, 0.4)',
+            background: 'rgba(255, 255, 255, 0.02)',
+            padding: '16px',
+            borderRadius: '12px',
+            color: 'var(--text-secondary)',
+            fontSize: '0.9rem',
+            width: '100%',
+            maxWidth: '350px'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px', color: '#ef4444', fontWeight: 600 }}>
+               Report Deleted
+            </div>
+            <div style={{ marginBottom: '8px' }}>
+              <strong>Query:</strong> "{message.originalQuery}"
+            </div>
+            <div style={{ marginBottom: '16px', opacity: 0.8 }}>
+              This report has been deleted.
+            </div>
+            <button 
+              onClick={() => onReply(message.originalQuery)}
+              style={{
+                background: 'rgba(255, 255, 255, 0.05)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                color: 'var(--text-primary)',
+                padding: '6px 12px',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontSize: '0.85rem'
+              }}
+            >
+               Re-verify this claim
+            </button>
           </div>
           {ts}
         </div>

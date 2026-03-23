@@ -75,6 +75,7 @@ const VERDICT_META = {
 const StatusBadge = ({ status }) => {
   if (status === 'searching') return <span className="status-badge searching"><span className="status-spinner" /> Searching...</span>;
   if (status === 'verifying') return <span className="status-badge verifying"><span className="status-spinner" /> Verifying...</span>;
+  if (status === 'error') return <span className="status-badge" style={{ color: '#ef4444' }}>Error</span>;
   return null;
 };
 
@@ -156,6 +157,11 @@ const ClaimCard = ({ claim, index = 0 }) => {
             <span className={`verdict-pill-new ${verdictMeta.cls} verdict-animate-in`}>
               <span className="verdict-dot-new" />
               {verdictMeta.label}
+            </span>
+          ) : status === 'error' ? (
+            <span className={`verdict-pill-new verdict-false`}>
+              <span className="verdict-dot-new" />
+              FAILED
             </span>
           ) : (
             <span className={`verdict-pill-new verdict-pending ${status === 'pending' ? 'pulse-anim' : ''}`}>
