@@ -1,704 +1,328 @@
-/* ═══════════════════════════════════
-   CLAIM FULL — Always Expanded Layout
-   ═══════════════════════════════════ */
-.claim-full {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  padding: 24px 0;
-  animation: slideUpFadeIn 0.3s ease both;
+/* ── Animations ── */
+@keyframes slideInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-/* Header */
-.claim-full-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.claim-full-text {
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  line-height: 1.5;
-  flex: 1;
-}
-
-.claim-full-badges {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-}
-
-/* Verdict pill */
-.verdict-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 0.65rem;
-  font-weight: 700;
-  padding: 4px 10px;
-  border-radius: 12px;
-  white-space: nowrap;
-  border: 1px solid transparent;
-  letter-spacing: 0.3px;
-}
-
-.verdict-dot {
-  width: 5px; height: 5px;
-  border-radius: 50%;
-}
-
-.pill-true        { color: var(--accent-true);         background: rgba(16,185,129,0.08);  border-color: rgba(16,185,129,0.2); animation: greenGlowPulse 4s infinite; }
-.pill-true .verdict-dot              { background: var(--accent-true); }
-.pill-false       { color: var(--accent-false);        background: rgba(239,68,68,0.08);   border-color: rgba(239,68,68,0.2); animation: redGlowPulse 4s infinite; }
-.pill-false .verdict-dot             { background: var(--accent-false); }
-.pill-partially-true { color: var(--accent-partial);  background: rgba(234,179,8,0.08);   border-color: rgba(234,179,8,0.2); animation: yellowGlowPulse 4s infinite; }
-.pill-partially-true .verdict-dot    { background: var(--accent-partial); }
-.pill-unverifiable   { color: var(--accent-unverifiable); background: rgba(139,92,246,0.08); border-color: rgba(139,92,246,0.2); animation: purpleGlowPulse 4s infinite; }
-.pill-unverifiable .verdict-dot      { background: var(--accent-unverifiable); }
-
-.confidence-badge {
-  font-size: 0.7rem;
-  font-weight: 600;
-  color: var(--text-tertiary);
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
-  padding: 3px 8px;
-  border-radius: 8px;
-}
-
-/* Divider */
-.cf-divider {
-  height: 1px;
-  background: var(--card-border);
-}
-
-/* Section */
-.cf-section {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.cf-section-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.cf-section-label {
-  font-size: 0.6rem;
-  font-weight: 700;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  color: var(--text-tertiary);
-}
-
-.cf-date-muted {
-  font-size: 0.7rem;
-  color: var(--text-tertiary);
-}
-
-.cf-bold {
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  line-height: 1.6;
-  margin: 0;
-}
-
-.cf-regular {
-  font-size: 0.85rem;
-  color: var(--text-secondary);
-  line-height: 1.6;
-  margin: 0;
-}
-
-.cf-correction {
-  font-size: 0.82rem;
-  color: var(--text-secondary);
-  line-height: 1.6;
-  border-left: 2px solid var(--accent-false);
-  padding: 8px 12px;
-  border-radius: 0 4px 4px 0;
-  background: rgba(239,68,68,0.04);
-}
-
-/* Source Cards */
-.source-cards {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.source-card {
-  border: 1px solid var(--card-border);
-  border-radius: 8px;
-  overflow: hidden;
-  background: var(--card-bg);
-}
-
-.source-card-top {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  padding: 8px 12px 4px;
-}
-
-.stance-tag {
-  font-size: 0.65rem;
-  font-weight: 700;
-  padding: 2px 8px;
-  border-radius: 10px;
-  letter-spacing: 0.3px;
-}
-
-.stance-supporting {
-  color: var(--accent-true);
-  background: rgba(16,185,129,0.08);
-  border: 1px solid rgba(16,185,129,0.2);
-}
-
-.stance-counter {
-  color: var(--accent-partial);
-  background: rgba(234,179,8,0.08);
-  border: 1px solid rgba(234,179,8,0.2);
-}
-
-.source-card-body {
-  padding: 4px 12px 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.source-publisher-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.source-favicon {
-  width: 18px; height: 18px;
-  border-radius: 4px;
-  background: var(--accent-unverifiable);
-  color: white;
-  font-size: 0.65rem;
-  font-weight: 700;
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
-}
-
-.source-publisher-name {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.source-title-sep {
-  color: var(--text-tertiary);
-  font-size: 0.75rem;
-}
-
-.source-article-title {
-  font-size: 0.8rem;
-  color: #3b82f6;
-  text-decoration: none;
-  transition: text-decoration 0.15s;
-}
-
-.source-article-title:hover { text-decoration: underline; }
-
-.source-meta-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.source-date-sm {
-  font-size: 0.7rem;
-  color: var(--text-tertiary);
-  white-space: nowrap;
-}
-
-.source-snippet {
-  font-size: 0.78rem;
-  color: var(--text-secondary);
-  font-style: italic;
-}
-
-/* Credibility bar inline */
-.cred-row-inline {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.cred-label-sm {
-  font-size: 0.65rem;
-  color: var(--text-tertiary);
-  white-space: nowrap;
-  min-width: 60px;
-}
-
-.cred-segs {
-  display: flex;
-  gap: 2px;
-  flex: 1;
-}
-
-.cred-seg {
-  flex: 1;
-  height: 5px;
-  border-radius: 2px;
-  transition: background 0.4s;
-}
-
-.cred-pct-sm {
-  font-size: 0.7rem;
-  font-weight: 600;
-  min-width: 32px;
-  text-align: right;
-}
-
-/* Conflict block */
-.conflict-block {
-  background: rgba(234,179,8,0.06);
-  border: 1px solid rgba(234,179,8,0.2);
-  border-radius: 8px;
-  padding: 12px 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.conflict-block-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--accent-partial);
-}
-
-.conflict-block-text {
-  font-size: 0.82rem;
-  color: var(--text-secondary);
-  line-height: 1.5;
-  margin: 0;
-}
-
-/* Claim footer / actions */
-.cf-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 12px;
-  padding-top: 8px;
-  border-top: 1px solid var(--card-border);
-}
-
-.category-chip {
-  font-size: 0.7rem;
-  font-weight: 600;
-  padding: 3px 10px;
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
-  border-radius: 12px;
-  color: var(--text-secondary);
-}
-
-.cf-actions {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.cf-action-btn {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 0.75rem;
-  color: var(--text-secondary);
-  padding: 5px 9px;
-  border-radius: 6px;
-  background: transparent;
-  border: 1px solid transparent;
-  transition: all 0.15s;
-}
-
-.cf-action-btn:hover {
-  background: var(--card-bg);
-  color: var(--text-primary);
-  border-color: var(--card-border);
-}
-
-.action-up  { color: var(--accent-true) !important; }
-.action-down { color: var(--accent-false) !important; }
-
-/* ═══════════════════════════════════════════════════════════
-   NEW LIVE CLAIM CARD — WS real-time states + collapse/expand
-   ═══════════════════════════════════════════════════════════ */
-
-@keyframes slideInCard {
-  from { opacity: 0; transform: translateY(16px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes pulseGray {
-  0%, 100% { opacity: 0.5; }
-  50%       { opacity: 1; }
-}
-
-@keyframes spinnerRotate {
+@keyframes spinnerSmall {
   to { transform: rotate(360deg); }
 }
 
-.slide-in-card {
-  animation: slideInCard 0.35s ease both;
-}
-
-.claim-card-new {
-  border: 1px solid var(--card-border);
-  border-radius: 10px;
-  background: var(--card-bg);
-  margin-bottom: 10px;
+/* ── Premium Chat Claim Card ── */
+.premium-chat-claim-card {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-left: 4px solid transparent;
+  border-radius: 16px;
+  margin-bottom: 12px;
   overflow: hidden;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: slideInUp 0.4s ease both;
+  cursor: pointer;
 }
 
-.claim-card-new:hover {
-  border-color: rgba(124,92,252,0.4);
-  box-shadow: 0 4px 20px rgba(124,92,252,0.15);
+.premium-chat-claim-card:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.08);
+  transform: translateX(2px);
 }
 
-.claim-card-new[data-status="error"] {
-  border-left: 4px solid var(--accent-false);
-  box-shadow: -4px 0 16px rgba(239, 68, 68, 0.15);
+.premium-chat-claim-card.is-expanded {
+  background: rgba(255, 255, 255, 0.03);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
-/* Cursor pointer only when verified (clickable) */
-.card-expanded,
-.card-collapsed { cursor: pointer; }
+/* ── Header ── */
+.chat-card-header {
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
 
-/* ── Main Row ── */
-.card-main-row {
+.chat-card-top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.chat-card-badges {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 12px 14px;
 }
 
-.card-left  { flex-shrink: 0; }
-.card-center { flex: 1; min-width: 0; }
-.card-right {
+.chat-claim-id {
+  font-size: 10px;
+  font-weight: 800;
+  color: #525866;
+  letter-spacing: 0.5px;
+}
+
+.chat-verdict-tag {
   display: flex;
   align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-}
-
-.card-claim-text {
-  font-size: 0.88rem;
-  font-weight: 500;
-  color: var(--text-primary);
-  line-height: 1.45;
-  margin: 0;
-}
-
-.text-truncated {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* ── Verdict Pill (new shape) ── */
-.verdict-pill-new {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 0.62rem;
-  font-weight: 700;
-  padding: 3px 9px;
-  border-radius: 12px;
-  white-space: nowrap;
-  border: 1px solid transparent;
-  letter-spacing: 0.4px;
-}
-
-.verdict-dot-new {
-  width: 5px; height: 5px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-/* Verdict colors — WS values are "True" / "False" / "Partial" / "Unverifiable" */
-.verdict-true        { color: var(--accent-true);          background: rgba(16,185,129,0.08);  border-color: rgba(16,185,129,0.2); animation: greenGlowPulse 4s infinite; }
-.verdict-true .verdict-dot-new         { background: var(--accent-true); }
-
-.verdict-false       { color: var(--accent-false);         background: rgba(239,68,68,0.08);   border-color: rgba(239,68,68,0.2); animation: redGlowPulse 4s infinite; }
-.verdict-false .verdict-dot-new        { background: var(--accent-false); }
-
-.verdict-partial     { color: var(--accent-partial);       background: rgba(234,179,8,0.08);   border-color: rgba(234,179,8,0.2); animation: yellowGlowPulse 4s infinite; }
-.verdict-partial .verdict-dot-new      { background: var(--accent-partial); }
-
-.verdict-unverifiable { color: var(--accent-unverifiable); background: rgba(139,92,246,0.08); border-color: rgba(139,92,246,0.2); animation: purpleGlowPulse 4s infinite; }
-.verdict-unverifiable .verdict-dot-new { background: var(--accent-unverifiable); }
-
-.verdict-pending     { color: var(--text-tertiary);        background: var(--card-border);     border-color: transparent; }
-.verdict-pending .verdict-dot-new      { background: var(--text-tertiary); }
-
-.pulse-anim { animation: pulseGray 1.5s ease-in-out infinite; }
-
-.verdict-animate-in { animation: slideInCard 0.3s ease both; }
-
-/* ── Status Badge (Searching / Verifying) ── */
-.status-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 0.7rem;
-  font-weight: 600;
-  padding: 3px 9px;
-  border-radius: 12px;
-  white-space: nowrap;
-}
-
-.status-spinner {
-  width: 8px; height: 8px;
-  border: 1.5px solid currentColor;
-  border-top-color: transparent;
-  border-radius: 50%;
-  display: inline-block;
-  animation: spinnerRotate 0.7s linear infinite;
-}
-
-.status-badge.searching { color: #60a5fa; background: rgba(96,165,250,0.08); border: 1px solid rgba(96,165,250,0.2); }
-.status-badge.verifying { color: var(--accent-partial); background: rgba(234,179,8,0.08); border: 1px solid rgba(234,179,8,0.2); }
-
-/* ── Confidence bar ── */
-.confidence-bar-track {
-  height: 2px;
-  background: var(--card-border);
-  border-radius: 2px;
-  margin: 0 14px 10px;
-  overflow: hidden;
-}
-
-.confidence-bar-fill {
-  height: 100%;
-  border-radius: 2px;
-  transition: width 0.8s ease;
-}
-
-.conf-verdict-true        { background: var(--accent-true); }
-.conf-verdict-false       { background: var(--accent-false); }
-.conf-verdict-partial     { background: var(--accent-partial); }
-.conf-verdict-unverifiable { background: var(--accent-unverifiable); }
-
-/* ── Confidence inline text ── */
-.confidence-inline { display: flex; align-items: center; }
-.confidence-pct {
-  font-size: 0.72rem;
-  font-weight: 600;
-  color: var(--text-tertiary);
-}
-
-/* ── Conflict icon ── */
-.conflict-icon { color: var(--accent-partial); flex-shrink: 0; }
-
-/* ── Expand chevron ── */
-.expand-chevron {
-  color: var(--text-tertiary);
-  display: flex;
-  align-items: center;
-  transition: transform 0.2s;
-}
-
-/* ── Expand / Collapse animation ── */
-.card-expandable {
-  max-height: 0;
-  overflow: hidden;
-  transition: max-height 0.4s ease;
-}
-
-.card-expandable.card-open {
-  max-height: 2000px;
-}
-
-.card-expanded-inner {
-  padding: 0 14px 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-/* ── Sources (new, from real WS data) ── */
-.source-cards-new {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.source-card-new {
-  border: 1px solid var(--card-border);
-  border-radius: 8px;
-  padding: 10px 12px;
-  background: var(--input-bg);
-  display: flex;
-  flex-direction: column;
   gap: 6px;
-  position: relative;
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  border: 1px solid transparent;
 }
 
-.source-meta-row-new {
+.chat-verdict-tag.is-loading {
+  background: rgba(255,255,255,0.05);
+  color: #9ba1a6;
+}
+
+.chat-spinner-small {
+  width: 10px; height: 10px;
+  border: 2px solid rgba(255,255,255,0.1);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spinnerSmall 0.6s linear infinite;
+}
+
+.chat-card-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
+  gap: 12px;
 }
 
-.source-last-updated {
-  font-size: 0.66rem;
-  color: var(--text-tertiary);
-  white-space: nowrap;
+.chat-expand-icon {
+  color: #525866;
+  transition: color 0.2s;
 }
 
-.source-card-footer {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 2px;
+.premium-chat-claim-card:hover .chat-expand-icon {
+  color: #fff;
 }
 
-.source-conf-pill {
-  font-size: 0.63rem;
-  font-weight: 700;
-  padding: 2px 9px;
-  border-radius: 10px;
-  border: 1px solid transparent;
-  letter-spacing: 0.2px;
-  white-space: nowrap;
-}
-
-.conf-supports {
-  color: var(--accent-true);
-  background: rgba(16,185,129,0.08);
-  border-color: rgba(16,185,129,0.2);
-}
-
-.conf-contradicts {
-  color: var(--accent-false);
-  background: rgba(239,68,68,0.08);
-  border-color: rgba(239,68,68,0.2);
-}
-
-.source-title-link {
-  font-size: 0.82rem;
+.chat-claim-text-main {
+  font-size: 16px;
   font-weight: 600;
-  color: #3b82f6;
-  text-decoration: none;
-  line-height: 1.3;
-}
-.source-title-link:hover { text-decoration: underline; }
-
-.source-snippet-new {
-  font-size: 0.78rem;
-  color: var(--text-secondary);
+  color: #fff;
   line-height: 1.5;
   margin: 0;
+}
+
+/* ── Meters ── */
+.chat-mini-bar {
+  display: flex;
+  gap: 2px;
+  height: 3px;
+}
+
+.chat-mini-seg {
+  flex: 1;
+  border-radius: 1px;
+}
+
+.chat-card-mini-meter {
+  padding-top: 4px;
+}
+
+.chat-card-visual-meter {
+  padding: 0 20px 16px;
+}
+
+/* ── Content ── */
+.chat-card-expanded-content {
+  display: flex;
+  flex-direction: column;
+  transition: all 0.3s ease;
+}
+
+.chat-card-expanded-content.hide {
+  height: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.chat-card-expanded-content.show {
+  height: auto;
+  opacity: 1;
+  padding-bottom: 20px;
+}
+
+.chat-expanded-divider {
+  height: 1px;
+  background: rgba(255,255,255,0.05);
+  margin: 0 20px 20px;
+}
+
+.chat-conflict-alert {
+  margin: 0 20px 20px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: rgba(234, 179, 8, 0.05);
+  border: 1px solid rgba(234, 179, 8, 0.1);
+  color: #eab308;
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chat-premium-sections {
+  padding: 0 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.chat-premium-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.chat-section-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 800;
+  color: #525866;
+  letter-spacing: 0.5px;
+}
+
+.chat-analysis-text {
+  font-size: 14px;
+  color: #9ba1a6;
+  line-height: 1.6;
+  margin: 0;
+  padding-left: 10px;
+  border-left: 2px solid rgba(255,255,255,0.05);
+}
+
+/* ── Sources ── */
+.chat-source-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.chat-source-item {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.chat-source-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.chat-source-pub {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #525866;
+}
+
+.chat-favicon-mini {
+  width: 14px; height: 14px;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 8px;
+  font-weight: 800;
+  color: #fff;
+}
+
+.chat-source-link {
+  color: #3b82f6;
+  opacity: 0.6;
+}
+
+.chat-source-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  margin: 0;
   display: -webkit-box;
-  -webkit-line-clamp: 3;
-  line-clamp: 3;
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
-.source-domain {
-  font-size: 0.68rem;
-  color: var(--text-tertiary);
-  margin-top: 2px;
-}
-
-/* ── Conflict amber box ── */
-.conflict-amber-box {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  background: rgba(234,179,8,0.06);
-  border: 1px solid rgba(234,179,8,0.25);
-  border-radius: 8px;
-  padding: 12px 14px;
-  color: var(--accent-partial);
-  font-size: 0.82rem;
-}
-
-.conflict-amber-box > svg { flex-shrink: 0; margin-top: 2px; }
-.conflict-amber-box strong { display: block; margin-bottom: 4px; }
-.conflict-amber-box p { margin: 0; color: var(--text-secondary); font-size: 0.8rem; }
-
-/* ── Card footer ── */
-.card-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding-top: 10px;
-  border-top: 1px solid var(--card-border);
-}
-
-.copy-claim-btn {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 0.72rem;
-  color: var(--text-secondary);
-  background: transparent;
-  border: 1px solid var(--card-border);
-  padding: 4px 10px;
-  border-radius: 6px;
-  transition: all 0.15s;
-}
-.copy-claim-btn:hover {
-  background: var(--card-bg);
-  color: var(--text-primary);
-}
-
-/* ── Live claims section (container in ChatThread) ── */
-.live-claims-section {
-  padding: 8px 0;
-  display: flex;
-  flex-direction: column;
-}
-
-/* 🔍 Search Query Styles */
-.claim-search-query {
-  font-size: 11px;
-  color: rgba(255,255,255,0.35);
-  font-style: italic;
-  margin-top: 4px;
-}
-
-.claim-search-query-full {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin-bottom: 12px;
-}
-.claim-search-query-full span:first-child {
-  font-size: 10px;
-  letter-spacing: 1px;
-  color: rgba(255,255,255,0.3);
-  text-transform: uppercase;
-}
-.claim-search-query-full span:last-child {
+.chat-source-snippet {
   font-size: 12px;
-  font-family: 'JetBrains Mono', monospace;
-  color: rgba(255,255,255,0.5);
-  font-style: italic;
+  color: #70757e;
+  line-height: 1.4;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.chat-stance-tag {
+  font-size: 10px;
+  font-weight: 700;
+  align-self: flex-start;
+}
+.chat-stance-tag.is-up { color: #10b981; }
+.chat-stance-tag.is-down { color: #ef4444; }
+
+/* ── Footer ── */
+.chat-card-footer-premium {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 20px 0;
+  border-top: 1px solid rgba(255,255,255,0.05);
+  margin-top: 20px;
+}
+
+.chat-footer-meta {
+  display: flex;
+  gap: 12px;
+}
+
+.chat-meta-chip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #525866;
+}
+
+.chat-copy-btn-v2 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #9ba1a6;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.chat-copy-btn-v2:hover {
+  background: rgba(255,255,255,0.05);
+  color: #fff;
+}
+
+/* ── Verdict Ring ── */
+.chat-conf-ring svg {
+  vertical-align: middle;
 }

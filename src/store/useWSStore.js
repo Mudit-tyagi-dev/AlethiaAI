@@ -12,8 +12,10 @@ const useWSStore = create((set, get) => ({
   currentQuery: '',
   finalReport: null,
   error: null,
+  errorMessage: null,
 
   setError: (err) => set({ error: err }),
+  setErrorMessage: (msg) => set({ errorMessage: msg }),
   setConnected: (bool) => set({ isConnected: bool }),
   setProcessing: (bool) => set({ isProcessing: bool }),
   setPipeline: (stage, progress) => set({ 
@@ -52,7 +54,8 @@ const useWSStore = create((set, get) => ({
     finalReport: null,
     pipelineStage: null,
     pipelineProgress: 0,
-    error: null
+    error: null,
+    errorMessage: null
   }),
 }));
 

@@ -1,55 +1,107 @@
-import React, { useEffect, useState } from 'react';
+import React, { useId } from 'react';
+import '../../styles/truthmeter.css';
 
 const TruthMeter = ({ score }) => {
-  const [animatedScore, setAnimatedScore] = useState(0);
+  const uniqueId = useId().replace(/:/g, '');
+  const gradientId = `gaugeGradient-${uniqueId}`;
+  const glowId = `glow-${uniqueId}`;
 
-  useEffect(() => {
-    let startTime = null;
-    const duration = 1200;
-    const animate = (currentTime) => {
-      if (!startTime) startTime = currentTime;
-      const progress = Math.min((currentTime - startTime) / duration, 1);
-      const ease = progress < 0.5
-        ? 4 * progress * progress * progress
-        : 1 - Math.pow(-2 * progress + 2, 3) / 2;
-      setAnimatedScore(Math.min(Math.floor(ease * score), score));
-      if (progress < 1) requestAnimationFrame(animate);
-      else setAnimatedScore(score);
-    };
-    requestAnimationFrame(animate);
-  }, [score]);
+  const isAvailable = score !== null && score !== undefined && !isNaN(score);
+  const displayScore = isAvailable ? Math.round(score) : 50;
+  
+  // Angle: -90 (0%) to 90 (100%)
+  const needleAngle = isAvailable ? -90 + (displayScore / 100) * 180 : 0;
 
-  let color = 'var(--accent-false)';
-  if (score >= 40 && score < 70) color = 'var(--accent-partial)';
-  if (score >= 70) color = 'var(--accent-true)';
+  // Gradient colors
+  const getColor = (val) => {
+    if (!isAvailable) return 'var(--text-tertiary)'; // Gray
+    if (val < 40) return 'var(--accent-false)'; // Red
+    if (val < 70) return 'var(--accent-partial)'; // Yellow
+    return 'var(--accent-true)'; // Green
+  };
 
-  const SEGMENTS = 10;
-  const filledCount = Math.round((animatedScore / 100) * SEGMENTS);
+  const currentColor = getColor(displayScore);
 
   return (
-    <div className="truth-meter-container" style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-      <div className="truth-meter-labels" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: '4px' }}>
-        <span className="tm-label-false" style={{ color: '#ef4444', fontWeight: 'bold', fontSize: '0.75rem' }}>FALSE</span>
-        <span className="tm-label-true" style={{ color: '#10b981', fontWeight: 'bold', fontSize: '0.75rem' }}>TRUE</span>
-      </div>
-      <div className="truth-meter-bar" style={{ display: 'flex', gap: '3px', width: '100%' }}>
-        {Array.from({ length: SEGMENTS }).map((_, i) => (
-          <div
-            key={i}
-            className="tm-segment"
-            style={{
-              flex: 1,
-              height: '8px',
-              borderRadius: '2px',
-              background: i < filledCount ? color : 'var(--card-border, rgba(255,255,255,0.1))',
-              transition: 'background 0.4s ease'
-            }}
+    <div className="truth-meter-wrapper">
+      <div className="truth-meter-svg-container">
+        <svg viewBox="0 0 200 130" className="truth-meter-svg">
+          <defs>
+            <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="var(--accent-false)" />
+              <stop offset="50%" stopColor="var(--accent-partial)" />
+              <stop offset="100%" stopColor="var(--accent-true)" />
+            </linearGradient>
+            <filter id={glowId}>
+              <feGaussianBlur stdDeviation="3" result="coloredBlur" />
+              <feMerge>
+                <feMergeNode in="coloredBlur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
+
+          {/* Background Track */}
+          <path
+            d="M 20 110 A 80 80 0 0 1 180 110"
+            fill="none"
+            stroke="var(--card-border)"
+            strokeWidth="14"
+            strokeLinecap="round"
           />
-        ))}
-      </div>
-      <div className="truth-score-row" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '12px' }}>
-        <div className="truth-score-pct" style={{ color, fontSize: '1.6rem', fontWeight: '800', lineHeight: '1.2' }}>{animatedScore}%</div>
-        <div className="truth-meter-label" style={{ fontSize: '0.65rem', color: 'var(--text-tertiary)', fontWeight: '700', marginTop: '2px', letterSpacing: '1px', textTransform: 'uppercase' }}>TRUTH SCORE</div>
+
+          {/* Color Gradient Track */}
+          <path
+            d="M 20 110 A 80 80 0 0 1 180 110"
+            fill="none"
+            stroke={`url(#${gradientId})`}
+            strokeWidth="14"
+            strokeLinecap="round"
+            opacity={isAvailable ? 1 : 0.2}
+          />
+
+          {/* Pivot Point Shadow/Base */}
+          <circle cx="100" cy="110" r="8" fill="var(--overlay-bg)" opacity="0.4" />
+          
+          {/* Needle - Using SVG transform attribute for maximum compatibility */}
+          <g 
+            className="truth-meter-needle-group"
+            transform={`rotate(${needleAngle} 100 110)`}
+          >
+            <line
+              x1="100" y1="110"
+              x2="100" y2="30"
+              stroke={currentColor}
+              strokeWidth="3.5"
+              strokeLinecap="round"
+              filter={`url(#${glowId})`}
+              style={{ stroke: currentColor }}
+            />
+          </g>
+
+          {/* Pivot Dot - Rendered on top of needle base */}
+          <circle 
+            cx="100" cy="110" r="5" 
+            fill={currentColor} 
+            filter={`url(#${glowId})`} 
+            style={{ fill: currentColor }}
+          />
+
+          {/* Corner Labels (Muted, bottom edges) */}
+          <text x="15" y="125" className="meter-tick-label" textAnchor="start" fill="var(--text-tertiary)">FALSE</text>
+          <text x="185" y="125" className="meter-tick-label" textAnchor="end" fill="var(--text-tertiary)">TRUE</text>
+        </svg>
+
+        {/* Text outside/below the semicircle */}
+        <div className="meter-external-stats">
+          <div 
+            className="meter-score-external" 
+            style={{ color: currentColor, textShadow: isAvailable ? `0 0 20px ${currentColor}50` : 'none' }}
+          >
+            {isAvailable ? `${displayScore}%` : '—'}
+          </div>
+          <div className="meter-label-external">TRUTH SCORE</div>
+        </div>
       </div>
     </div>
   );

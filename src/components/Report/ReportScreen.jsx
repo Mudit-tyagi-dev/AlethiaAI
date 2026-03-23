@@ -1,10 +1,17 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, Download, AlertTriangle, Copy, Check, Trash2, Shield, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { 
+  ArrowLeft, Download, AlertTriangle, Copy, Check, Trash2, Shield, 
+  CheckCircle2, XCircle, AlertCircle, FileText, Calendar, Hash, 
+  Search, ExternalLink, Info, Award
+} from 'lucide-react';
 import '../../styles/reportscreen.css';
 import useReportStore from '../../store/useReportStore';
 import useAppStore from '../../store/useAppStore';
 import useWSStore from '../../store/useWSStore';
 import { destroyReport } from '../../services/api';
+import TruthMeter from './TruthMeter';
+import { PDFDownloadLink } from '@react-pdf/renderer';
+import PDFReport from './PDFReport';
 
 /* ─── Helpers ─────────────────────────────────────────────────────────────── */
 
@@ -55,81 +62,7 @@ const AnimatedCounter = ({ end, duration = 1000 }) => {
     requestAnimationFrame(animate);
   }, [end, duration]);
   return <span>{count}</span>;
-};
-
-/* ─── Semicircle Gauge ────────────────────────────────────────────────────── */
-const SemiGauge = ({ score }) => {
-  const [animated, setAnimated] = useState(0);
-  useEffect(() => {
-    let start = null;
-    const duration = 1400;
-    const animate = (t) => {
-      if (!start) start = t;
-      const progress = Math.min((t - start) / duration, 1);
-      const ease = 1 - Math.pow(1 - progress, 3);
-      setAnimated(Math.round(ease * score));
-      if (progress < 1) requestAnimationFrame(animate);
-      else setAnimated(score);
-    };
-    requestAnimationFrame(animate);
-  }, [score]);
-
-  const radius = 80;
-  const cx = 100, cy = 100;
-  const startAngle = Math.PI; // left
-  const endAngle = 0;        // right
-  const circumference = Math.PI * radius;
-
-  // Needle angle: score 0→0° (left), score 100→180° (right) mapped from PI to 0
-  const needleAngle = Math.PI - (animated / 100) * Math.PI;
-  const needleX = cx + (radius - 10) * Math.cos(needleAngle);
-  const needleY = cy + (radius - 10) * Math.sin(needleAngle);
-
-  // Arc path
-  const arcPath = `M ${cx - radius} ${cy} A ${radius} ${radius} 0 0 1 ${cx + radius} ${cy}`;
-
-  let trackColor = '#ef4444';
-  if (score >= 40 && score < 70) trackColor = '#eab308';
-  if (score >= 70) trackColor = '#10b981';
-
-  return (
-    <div className="rs-gauge-wrapper">
-      <svg viewBox="0 0 200 110" className="rs-gauge-svg">
-        {/* Track */}
-        <path d={arcPath} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="14" strokeLinecap="round" />
-        {/* Fill */}
-        <path
-          d={arcPath}
-          fill="none"
-          stroke={trackColor}
-          strokeWidth="14"
-          strokeLinecap="round"
-          strokeDasharray={circumference}
-          strokeDashoffset={circumference - (animated / 100) * circumference}
-          style={{ transition: 'stroke-dashoffset 0.05s linear' }}
-        />
-        {/* Needle */}
-        {/* Needle */}
-        <line
-          x1={cx} y1={cy}
-          x2={needleX} y2={needleY}
-          stroke={trackColor}
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          style={{ filter: `drop-shadow(0 0 6px ${trackColor})` }}
-        />
-        <circle cx={cx} cy={cy} r="5" fill={trackColor} style={{ filter: `drop-shadow(0 0 6px ${trackColor})` }} />
-        {/* Labels */}
-        <text x="14" y="105" fontSize="10" fill="#ef4444" fontWeight="700">FALSE</text>
-        <text x="162" y="105" fontSize="10" fill="#10b981" fontWeight="700">TRUE</text>
-      </svg>
-      <div className="rs-gauge-score" style={{ color: trackColor, textShadow: `0 0 12px ${trackColor}80` }}>
-        {animated}%
-      </div>
-      <div className="rs-gauge-label">TRUTH SCORE</div>
-    </div>
-  );
-};
+}
 
 /* ─── Confidence Ring ─────────────────────────────────────────────────────── */
 const ConfidenceRing = ({ pct, color }) => {
@@ -146,25 +79,28 @@ const ConfidenceRing = ({ pct, color }) => {
     requestAnimationFrame(animate);
   }, [pct]);
 
-  const r = 20, cx = 26, cy = 26;
+  const r = 18, cx = 22, cy = 22;
   const circ = 2 * Math.PI * r;
   const offset = circ - (animated / 100) * circ;
 
   return (
-    <svg width="52" height="52" className="rs-conf-ring">
-      <circle cx={cx} cy={cy} r={r} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="4" />
-      <circle
-        cx={cx} cy={cy} r={r} fill="none"
-        stroke={color} strokeWidth="4"
-        strokeLinecap="round"
-        strokeDasharray={circ}
-        strokeDashoffset={offset}
-        transform={`rotate(-90 ${cx} ${cy})`}
-      />
-      <text x={cx} y={cy + 4} textAnchor="middle" fontSize="9" fill={color} fontWeight="700">
-        {animated}%
-      </text>
-    </svg>
+    <div className="confidence-ring-wrapper">
+      <svg width="44" height="44" viewBox="0 0 44 44">
+        <circle cx={cx} cy={cy} r={r} fill="none" stroke="var(--card-border)" strokeWidth="3" />
+        <circle
+          cx={cx} cy={cy} r={r} fill="none"
+          stroke={color} strokeWidth="3"
+          strokeLinecap="round"
+          strokeDasharray={circ}
+          strokeDashoffset={offset}
+          transform={`rotate(-90 ${cx} ${cy})`}
+          style={{ filter: `drop-shadow(0 0 4px ${color}40)` }}
+        />
+        <text x={cx} y={cy + 4} textAnchor="middle" fontSize="10" fill="var(--text-primary)" fontWeight="800">
+          {animated}<tspan fontSize="6">%</tspan>
+        </text>
+      </svg>
+    </div>
   );
 };
 
@@ -183,16 +119,16 @@ const MiniTruthBar = ({ score, color }) => {
     setTimeout(() => requestAnimationFrame(animate), 200);
   }, [score]);
 
-  const SEGS = 10;
+  const SEGS = 20;
   const filled = Math.round((animated / 100) * SEGS);
 
   return (
-    <div className="rs-mini-bar">
+    <div className="rs-mini-bar-v2">
       {Array.from({ length: SEGS }).map((_, i) => (
         <div
           key={i}
-          className="rs-mini-seg"
-          style={{ background: i < filled ? color : 'rgba(255,255,255,0.06)' }}
+          className="rs-mini-seg-v2"
+          style={{ background: i < filled ? color : 'var(--card-border)' }}
         />
       ))}
     </div>
@@ -201,10 +137,10 @@ const MiniTruthBar = ({ score, color }) => {
 
 /* ─── Verdict helpers ─────────────────────────────────────────────────────── */
 const VERDICT_MAP = {
-  'True':         { label: 'TRUE',          cls: 'rv-true',         color: '#10b981' },
-  'False':        { label: 'FALSE',         cls: 'rv-false',        color: '#ef4444' },
-  'Partial':      { label: 'PARTIAL',       cls: 'rv-partial',      color: '#eab308' },
-  'Unverifiable': { label: 'UNVERIFIABLE',  cls: 'rv-unverifiable', color: '#8b5cf6' },
+  'True':         { label: 'TRUE',          cls: 'rv-true',         color: 'var(--accent-true)', icon: <CheckCircle2 size={14} /> },
+  'False':        { label: 'FALSE',         cls: 'rv-false',        color: 'var(--accent-false)', icon: <XCircle size={14} /> },
+  'Partial':      { label: 'PARTIAL',       cls: 'rv-partial',      color: 'var(--accent-partial)', icon: <AlertCircle size={14} /> },
+  'Unverifiable': { label: 'UNVERIFIABLE',  cls: 'rv-unverifiable', color: 'var(--accent-unverifiable)', icon: <Shield size={14} /> },
 };
 
 function verdictColor(v) {
@@ -223,7 +159,7 @@ const RSClaimCard = ({ claim, index, total, style }) => {
     conflicting = false,
   } = claim;
 
-  const vm = VERDICT_MAP[verdict] || { label: verdict.toUpperCase(), cls: 'rv-unverifiable', color: '#8b5cf6' };
+  const vm = VERDICT_MAP[verdict] || VERDICT_MAP['Unverifiable'];
   const pct = Math.round(confidence <= 1 ? confidence * 100 : confidence);
   const category = inferCategory(text);
 
@@ -235,94 +171,102 @@ const RSClaimCard = ({ claim, index, total, style }) => {
   };
 
   return (
-    <div className="rs-claim-card" style={style}>
-      {/* Claim number separator */}
-      {index > 0 && (
-        <div className="rs-claim-sep">
-          <span>── Claim {index + 1} of {total} ──</span>
+    <div 
+      className={`rs-premium-claim-card ${vm.cls} rs-slide-up`} 
+      style={{ ...style, borderLeftColor: vm.color }}
+    >
+      <div className="rs-premium-card-header">
+        <div className="rs-claim-badge-row">
+          <span className="rs-claim-number-badge">CLAIM {String(index + 1).padStart(2, '0')}</span>
+          <span className="rs-claim-verdict-badge" style={{ background: `${vm.color}15`, color: vm.color, borderColor: `${vm.color}30` }}>
+            {vm.icon}
+            {vm.label}
+          </span>
         </div>
-      )}
-
-      {/* Header */}
-      <div className="rs-claim-header">
-        <div className="rs-claim-num">Claim {String(index + 1).padStart(2, '0')}</div>
-        <div className="rs-claim-top-row">
-          <div className="rs-claim-text">{text}</div>
-          <div className="rs-claim-badges">
-            <span className={`rs-verdict-pill ${vm.cls}`}>
-              <span className="rs-verdict-dot" />
-              {vm.label}
-            </span>
+        
+        <div className="rs-claim-main-content">
+          <h4 className="rs-claim-title-text">{text}</h4>
+          <div className="rs-claim-stats-aside">
             <ConfidenceRing pct={pct} color={vm.color} />
           </div>
         </div>
       </div>
 
-      {/* Mini Truth Bar */}
-      <MiniTruthBar score={pct} color={vm.color} />
+      <div className="rs-claim-visual-meter">
+        <MiniTruthBar score={pct} color={vm.color} />
+      </div>
 
-      {/* Conflict pulsing dot */}
       {conflicting && (
-        <div className="rs-conflict-badge">
-          <span className="rs-conflict-dot" />
-          ⚠️ Sources conflict on this claim
+        <div className="rs-conflict-alert">
+          <AlertTriangle size={14} />
+          <span>Contradicting evidence found among sources</span>
         </div>
       )}
 
-      {/* AI Analysis */}
-      {reasoning && (
-        <div className="rs-section">
-          <div className="rs-section-label">AI ANALYSIS</div>
-          <p className="rs-section-text">{reasoning}</p>
-        </div>
-      )}
-
-      {/* Sources */}
-      {sources.length > 0 && (
-        <div className="rs-section">
-          <div className="rs-section-label">SOURCES ({sources.length} found)</div>
-          <div className="rs-sources-list">
-            {sources.map((src, i) => {
-              const domain = extractDomain(src.url);
-              const lastUpdated = extractDateFromSnippet(src.snippet);
-              const isSupporting = verdict === 'True' || verdict === 'Partial';
-              const srcConf = Math.max(50, Math.min(97, pct + (i % 2 === 0 ? 5 : -7)));
-
-              return (
-                <div key={i} className="rs-source-card">
-                  <a href={src.url} target="_blank" rel="noopener noreferrer" className="rs-source-title">
-                    {src.title || src.url} ↗
-                  </a>
-                  <div className="rs-source-meta">
-                    <span className="rs-source-domain">{domain}</span>
-                    <span className="rs-source-date">
-                      ⏳ {lastUpdated ? `Last updated: ${lastUpdated}` : 'Recently published'}
-                    </span>
-                  </div>
-                  <p className="rs-source-snippet">{src.snippet}</p>
-                  <div className="rs-source-footer">
-                    {isSupporting
-                      ? <span className="rs-src-pill rs-src-supports">Supports: {srcConf}%</span>
-                      : <span className="rs-src-pill rs-src-contradicts">Contradicts: {srcConf}%</span>
-                    }
-                  </div>
-                </div>
-              );
-            })}
+      <div className="rs-premium-sections">
+        {/* reasoning */}
+        {reasoning && (
+          <div className="rs-premium-section">
+            <div className="rs-section-header-v2">
+              <Info size={12} />
+              <span>AI ANALYSIS</span>
+            </div>
+            <p className="rs-analysis-text-v2">{reasoning}</p>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Footer chips */}
-      <div className="rs-claim-footer">
-        <div className="rs-footer-chips">
-          <span className="rs-chip">{category}</span>
-          <span className="rs-chip">📚 {sources.length} sources analyzed</span>
-          <span className="rs-chip">⏳ Fact-checked: just now</span>
+        {/* Sources */}
+        {sources.length > 0 && (
+          <div className="rs-premium-section">
+            <div className="rs-section-header-v2">
+              <Search size={12} />
+              <span>SOURCES ({sources.length})</span>
+            </div>
+            <div className="rs-source-grid-v2">
+              {sources.map((src, i) => {
+                const domain = extractDomain(src.url);
+                const isSupporting = verdict === 'True' || verdict === 'Partial';
+                const srcConf = Math.max(50, Math.min(97, pct + (i % 2 === 0 ? 5 : -7)));
+
+                return (
+                  <div key={i} className="rs-source-card-v2">
+                    <div className="rs-src-header-v2">
+                      <div className="rs-src-publisher-v2">
+                        <div className="rs-src-favicon-v2" style={{ background: vm.color }}>
+                          {domain.charAt(0).toUpperCase()}
+                        </div>
+                        <span className="rs-src-name-v2">{domain}</span>
+                      </div>
+                      <a href={src.url} target="_blank" rel="noopener noreferrer" className="rs-src-link-v2">
+                        <ExternalLink size={12} />
+                      </a>
+                    </div>
+                    
+                    <h5 className="rs-src-title-v2">{src.title || "Reference Source"}</h5>
+                    <p className="rs-src-snippet-v2">{src.snippet}</p>
+                    
+                    <div className="rs-src-footer-v2">
+                      <div className={`rs-stance-badge-v2 ${isSupporting ? 'stance-up' : 'stance-down'}`}>
+                        {isSupporting ? 'Supports' : 'Contradicts'}: {srcConf}%
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="rs-premium-card-footer">
+        <div className="rs-footer-metadata">
+          <span className="rs-meta-tag"><Hash size={10} /> {category}</span>
+          <span className="rs-meta-tag"><FileText size={10} /> {sources.length} Sources</span>
+          <span className="rs-meta-tag"><Award size={10} /> Fact-checked</span>
         </div>
-        <button className="rs-copy-btn" onClick={handleCopy}>
-          {copied ? <Check size={12} /> : <Copy size={12} />}
-          {copied ? 'Copied!' : 'Copy'}
+        <button className="rs-card-copy-btn" onClick={handleCopy}>
+          {copied ? <Check size={14} /> : <Copy size={14} />}
+          <span>{copied ? 'Copied' : 'Copy'}</span>
         </button>
       </div>
     </div>
@@ -334,10 +278,27 @@ const ReportScreen = ({ reportData, query, onBack }) => {
   const [isDeleting, setIsDeleting] = useState(false);
   const apiKey = useAppStore((s) => s.apiKey) || localStorage.getItem('factly_api_key') || '';
 
-  const score = Math.round((reportData.overall_score || 0) * 100);
+  // 1. STATS CARDS — Calculate from claims array directly
+  const claims = useMemo(() => reportData.claims || [], [reportData.claims]);
+  
+  const stats = useMemo(() => {
+    return {
+      total: claims.length,
+      true: claims.filter(c => c.verdict === "True").length,
+      false: claims.filter(c => c.verdict === "False").length,
+      partial: claims.filter(c => c.verdict === "Partial").length,
+      unverifiable: claims.filter(c => c.verdict === "Unverifiable").length,
+    };
+  }, [claims]);
+
+  const score = claims.length === 0 ? null : Math.round((reportData.overall_score || 0) * 100);
   const aiProb = Math.round((reportData.ai_text_probability || 0) * 100);
-  const claims = reportData.claims || [];
-  const timestamp = new Date().toLocaleString();
+  
+  const dateObj = new Date(reportData.created_at || new Date());
+  const formattedDate = dateObj.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  const formattedTime = dateObj.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+  
+  const reportIdShort = reportData.id?.substring(0, 8) || reportData.report_id?.substring(0, 8) || 'N/A';
 
   const aiProbLabel = aiProb < 30 ? 'Low' : aiProb < 70 ? 'Medium' : 'High';
   const aiProbCls = aiProb < 30 ? 'aip-low' : aiProb < 70 ? 'aip-med' : 'aip-high';
@@ -345,116 +306,167 @@ const ReportScreen = ({ reportData, query, onBack }) => {
 
   const handleExport = () => {
     const content = `Factly AI Verification Report\n` +
-      `Report ID: ${reportData.report_id || 'N/A'}\n` +
-      `Date: ${timestamp}\n` +
+      `Report ID: ${reportData.id || reportData.report_id || 'N/A'}\n` +
+      `Date: ${formattedDate} ${formattedTime}\n` +
       `Query: ${query}\n` +
-      `Truth Score: ${score}%\n` +
+      `Truth Score: ${score !== null ? score + '%' : 'N/A'}\n` +
       `AI Text Probability: ${aiProb}%\n\n` +
-      claims.map((c, i) => `Claim ${i + 1}: ${c.text}\nVerdict: ${c.verdict}\nConfidence: ${Math.round((c.confidence <= 1 ? c.confidence * 100 : c.confidence))}%\nReasoning: ${c.reasoning || 'N/A'}\n`).join('\n---\n');
+      claims.map((c, i) => `Claim ${i + 1}: ${c.claim_text || c.text}\nVerdict: ${c.verdict}\nConfidence: ${Math.round((c.confidence <= 1 ? c.confidence * 100 : c.confidence))}%\nReasoning: ${c.reasoning || 'N/A'}\n`).join('\n---\n');
     const blob = new Blob([content], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url; a.download = `factly-report-${reportData.report_id || Date.now()}.txt`;
+    a.href = url; a.download = `factly-report-${reportIdShort}.txt`;
     a.click();
     URL.revokeObjectURL(url);
   };
 
   return (
-    <div className="rs-screen">
-      {/* ── Top Bar ── */}
-      <div className="rs-topbar">
-        <button className="rs-back-btn" onClick={onBack}>
+    <div className="rs-screen-v2">
+      {/* ── Top Navigation ── */}
+      <div className="rs-nav-v2">
+        <button className="rs-back-btn-v2" onClick={onBack}>
           <ArrowLeft size={16} />
-          Back to Chat
+          <span>Exit Report</span>
         </button>
-        <div className="rs-topbar-center">
-          <span className="rs-topbar-title">Verification Report</span>
-          <span className="rs-topbar-date">{timestamp}</span>
+        <div className="rs-nav-actions-v2">
+          <button 
+            className="rs-nav-btn-v2 delete"
+            onClick={async () => {
+              if (!window.confirm("Delete this report permanently?")) return;
+              setIsDeleting(true);
+              try {
+                await destroyReport(reportData.id || reportData.report_id, apiKey);
+                useReportStore.getState().removeReport(reportData.id || reportData.report_id);
+                useWSStore.getState().markReportDeleted(reportData.id || reportData.report_id);
+                onBack();
+              } catch (err) {
+                alert("Failed to delete: " + err.message);
+                setIsDeleting(false);
+              }
+            }}
+            disabled={isDeleting}
+          >
+            <Trash2 size={14} />
+            {isDeleting ? 'Deleting...' : 'Delete'}
+          </button>
+          <PDFDownloadLink 
+            document={<PDFReport reportData={reportData} query={query} />} 
+            fileName={`factly-report-${reportIdShort}-${new Date().toISOString().split('T')[0]}.pdf`}
+            style={{ textDecoration: 'none' }}
+          >
+            {({ blob, url, loading, error }) => (
+              <button className="rs-nav-btn-v2 export" disabled={loading}>
+                <Download size={14} />
+                {loading ? '...' : 'Export PDF'}
+              </button>
+            )}
+          </PDFDownloadLink>
         </div>
-        <button 
-          className="rs-export-btn" 
-          style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', marginRight: '8px', opacity: isDeleting ? 0.6 : 1, cursor: isDeleting ? 'not-allowed' : 'pointer' }}
-          onClick={async () => {
-            if (!window.confirm("Are you sure you want to delete this report?")) return;
-            setIsDeleting(true);
-            try {
-              await destroyReport(reportData.report_id, apiKey);
-              useReportStore.getState().removeReport(reportData.report_id);
-              useWSStore.getState().markReportDeleted(reportData.report_id);
-              onBack();
-            } catch (err) {
-              alert("Failed to delete report: " + err.message);
-              setIsDeleting(false);
-            }
-          }}
-          disabled={isDeleting}
-        >
-          <Trash2 size={15} />
-          {isDeleting ? 'Deleting...' : 'Delete'}
-        </button>
-        <button className="rs-export-btn" onClick={handleExport}>
-          <Download size={15} />
-          Export
-        </button>
       </div>
 
-      {/* ── Scrollable Content ── */}
-      <div className="rs-content">
-        {/* Hero */}
-        <section className="rs-hero rs-fade-in">
-          <SemiGauge score={score} />
-          <div className="rs-query-box">
-            <div className="rs-query-label">Verified Query</div>
-            <p className="rs-query-text">"{query}"</p>
-          </div>
-          <div className={`rs-ai-prob-badge ${aiProbCls}`}>
-            🤖 AI Text Probability: <strong>{aiProbText}</strong>
-          </div>
-        </section>
-
-        {/* KPI Row */}
-        <section className="rs-kpi-row rs-slide-up" style={{ animationDelay: '0.15s' }}>
-          {[
-            { label: 'Total Claims', value: reportData.total_claims || 0, icon: <Shield size={18} />,     cls: 'kpi-total' },
-            { label: 'True',         value: reportData.true_count || 0,   icon: <CheckCircle2 size={18} />, cls: 'kpi-t' },
-            { label: 'False',        value: reportData.false_count || 0,  icon: <XCircle size={18} />,      cls: 'kpi-f' },
-            { label: 'Partial',      value: reportData.partial_count || 0, icon: <AlertCircle size={18} />,  cls: 'kpi-p' },
-          ].map(({ label, value, icon, cls }) => (
-            <div key={label} className={`rs-kpi-card ${cls}`}>
-              <div className="rs-kpi-icon">{icon}</div>
-              <div className="rs-kpi-value">
-                <AnimatedCounter end={value} duration={1000} />
+      <div className="rs-scroll-area-v2">
+        <div className="rs-container-v2">
+          
+          {/* ── Professional Header ── */}
+          <header className="rs-doc-header rs-fade-in">
+            <div className="rs-header-top">
+              <div className="rs-brand-badge">
+                < Award size={14} />
+                <span>Verified by Factly AI</span>
               </div>
-              <div className="rs-kpi-label">{label}</div>
+              <div className="rs-header-meta">
+                <div className="rs-meta-item">
+                  <Hash size={12} />
+                  <span>ID: {reportIdShort}</span>
+                </div>
+                <div className="rs-meta-item">
+                  <Calendar size={12} />
+                  <span>{formattedDate} • {formattedTime}</span>
+                </div>
+              </div>
             </div>
-          ))}
-        </section>
+            
+            <h1 className="rs-doc-title">Verification Analysis Report</h1>
+            <div className="rs-header-query">
+              <div className="rs-query-label-v2">INPUT QUERY</div>
+              <p className="rs-query-text-v2">"{query || reportData.input_text}"</p>
+            </div>
+            <div className="rs-header-divider" />
+          </header>
 
-        {/* Claims */}
-        <section className="rs-claims-section">
-          <div className="rs-claims-header">Claims Analysis</div>
-          {claims.map((claim, i) => (
-            <RSClaimCard
-              key={i}
-              claim={claim}
-              index={i}
-              total={claims.length}
-              style={{ animationDelay: `${0.25 + i * 0.1}s` }}
-            />
-          ))}
-          {claims.length === 0 && (
-            <div className="rs-no-claims">No individual claims available.</div>
-          )}
-        </section>
+          {/* ── Truth Meter & AI Prob ── */}
+          <section className="rs-hero-v2 rs-slide-up" style={{ animationDelay: '0.1s' }}>
+            <div className="rs-hero-main-v2">
+              <TruthMeter score={score} />
+            </div>
+            <div className={`rs-ai-prob-card-v2 ${aiProbCls}`}>
+              <div className="rs-ai-prob-header-v2">
+                <Info size={14} />
+                <span>AI CONTENT ANALYSIS</span>
+              </div>
+              <div className="rs-ai-prob-body-v2">
+                <span className="rs-ai-prob-value-v2">{aiProb}%</span>
+                <span className="rs-ai-prob-desc-v2">Probability of AI Generation: <strong>{aiProbLabel}</strong></span>
+              </div>
+            </div>
+          </section>
 
-        {/* Footer */}
-        <footer className="rs-footer">
-          <div>Verified by Factly AI ✦</div>
-          {reportData.report_id && (
-            <div className="rs-footer-id">Report ID: {reportData.report_id}</div>
-          )}
-          <div className="rs-footer-time">{timestamp}</div>
-        </footer>
+          {/* ── KPI Grid ── */}
+          <section className="rs-stats-grid-v2 rs-slide-up" style={{ animationDelay: '0.2s' }}>
+            {[
+              { label: 'Total Claims', value: stats.total, icon: <FileText size={20} />, color: 'var(--text-primary)', cls: 'st-total' },
+              { label: 'True',         value: stats.true,  icon: <CheckCircle2 size={20} />, color: 'var(--accent-true)', cls: 'st-true' },
+              { label: 'False',        value: stats.false, icon: <XCircle size={20} />, color: 'var(--accent-false)', cls: 'st-false' },
+              { label: 'Partial',      value: stats.partial, icon: <AlertCircle size={20} />, color: 'var(--accent-partial)', cls: 'st-partial' },
+              { label: 'Unverifiable', value: stats.unverifiable, icon: <Shield size={20} />, color: 'var(--accent-unverifiable)', cls: 'st-unv' },
+            ].map((st, i) => (
+              <div key={st.label} className={`rs-stat-box-v2 ${st.cls}`} style={{ '--glow-color': st.color }}>
+                <div className="rs-stat-icon-v2">{st.icon}</div>
+                <div className="rs-stat-value-v2">
+                  <AnimatedCounter end={st.value} />
+                </div>
+                <div className="rs-stat-label-v2">{st.label}</div>
+              </div>
+            ))}
+          </section>
+
+          {/* ── Claims Section ── */}
+          <section className="rs-claims-area-v2">
+            <h3 className="rs-section-title-v2 rs-slide-up" style={{ animationDelay: '0.3s' }}>
+              Detailed Claims breakdown
+            </h3>
+            
+            <div className="rs-claims-stack-v2">
+              {claims.map((claim, i) => (
+                <RSClaimCard
+                  key={i}
+                  claim={claim}
+                  index={i}
+                  total={claims.length}
+                  style={{ animationDelay: `${0.4 + i * 0.1}s` }}
+                />
+              ))}
+              
+              {claims.length === 0 && (
+                <div className="rs-empty-state-v2 rs-slide-up">
+                  <div className="rs-empty-icon-v2">
+                    <Search size={40} />
+                  </div>
+                  <h4 className="rs-empty-title-v2">No Claims Found</h4>
+                  <p className="rs-empty-text-v2">No verifiable factual claims were found in this text.</p>
+                </div>
+              )}
+            </div>
+          </section>
+
+          <footer className="rs-doc-footer-v2 rs-fade-in">
+            <div className="rs-footer-line" />
+            <div className="rs-footer-content-v2">
+              <span>Verified and Secured by Alethia AI & Factly Engine</span>
+              <span>© {new Date().getFullYear()}</span>
+            </div>
+          </footer>
+        </div>
       </div>
     </div>
   );

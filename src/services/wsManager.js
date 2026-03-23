@@ -41,6 +41,18 @@ const handleMessage = (data) => {
     store.setPipeline(data.stage, data.progress * 100);
   }
 
+  if (data.event === 'error') {
+    const msg = data.message || '';
+    const isExhausted = /RESOURCE_EXHAUSTED|429|quota/i.test(msg);
+    if (isExhausted) {
+      store.setProcessing(false);
+      store.setErrorMessage({
+        type: 'api_exhausted',
+        message: 'API key quota exceeded. Please update your API key.'
+      });
+    }
+  }
+
   if (data.event === 'claim_found') {
     store.addClaim({
       claim_id: data.claim_id,
@@ -71,6 +83,16 @@ const handleMessage = (data) => {
 
   if (data.event === 'report_done') {
     store.setProcessing(false);
+    
+    // Check if no claims were found
+    if (data.total_claims === 0 || (!data.claims || data.claims.length === 0)) {
+      store.setErrorMessage({
+        type: 'no_claims',
+        message: "We couldn't find any verifiable factual claims in this text. Try submitting a statement with clear facts."
+      });
+      return;
+    }
+
     const trueCount = data['true'] ?? 0;
     const falseCount = data['false'] ?? 0;
     const partialCount = data['partial'] ?? 0;

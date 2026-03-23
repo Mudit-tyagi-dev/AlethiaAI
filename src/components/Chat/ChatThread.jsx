@@ -11,6 +11,7 @@ import useWSStore from '../../store/useWSStore';
 import useAppStore from '../../store/useAppStore';
 import { sendMessage } from '../../services/wsManager';
 import { detectText, detectImage, detectPdf } from '../../services/api';
+import { Download, FileText, Share2 } from 'lucide-react';
 
 
 
@@ -39,6 +40,7 @@ const ChatThread = ({ openSettingsOnApiTab, onViewReport }) => {
   const finalReport = useWSStore((s) => s.finalReport);
   const currentQuery = useWSStore((s) => s.currentQuery);
   const error = useWSStore((s) => s.error);
+  const errorMessage = useWSStore((s) => s.errorMessage);
   const isVerifying = isProcessing && !finalReport && !error;
 
   // Local State
@@ -76,6 +78,7 @@ const ChatThread = ({ openSettingsOnApiTab, onViewReport }) => {
 
     const store = useWSStore.getState();
     store.resetClaims();
+    store.setErrorMessage(null);
     store.setProcessing(true);
     
     const queryStr = typeof textOrFile === 'string' ? textOrFile : textOrFile.name;
@@ -216,6 +219,14 @@ const ChatThread = ({ openSettingsOnApiTab, onViewReport }) => {
                   onViewReport={onViewReport}
                 />
               )
+            )}
+
+            {errorMessage?.type === 'api_exhausted' && (
+              <APIExhaustedCard onUpdateClick={() => openSettingsOnApiTab()} />
+            )}
+
+            {errorMessage?.type === 'no_claims' && (
+              <NoClaimsCard />
             )}
 
 
@@ -404,6 +415,8 @@ const AIDetectionResultCard = ({ reportData, query, mode }) => {
 
 // ─── Final Report Block ─────────────────────────────────────────────────────
 import TruthMeter from '../Report/TruthMeter';
+import { PDFDownloadLink } from '@react-pdf/renderer';
+import PDFReport from '../Report/PDFReport';
 
 const AnimatedKpi = ({ end }) => {
   const [count, setCount] = React.useState(0);
@@ -423,14 +436,25 @@ const AnimatedKpi = ({ end }) => {
 };
 
 const FinalReportBlock = ({ reportData, query, onViewReport }) => {
-  const score = Math.round((reportData.overall_score || 0) * 100);
+  const claims = reportData.claims || [];
+  
+  const stats = {
+    total: claims.length,
+    true: claims.filter(c => c.verdict === "True").length,
+    false: claims.filter(c => c.verdict === "False").length,
+    partial: claims.filter(c => c.verdict === "Partial").length,
+    unverifiable: claims.filter(c => c.verdict === "Unverifiable").length,
+  };
+
+  const score = claims.length === 0 ? null : (reportData.overall_score || 0) * 100;
   const aiProb = Math.round((reportData.ai_text_probability || 0) * 100);
 
   const kpiData = [
-    { label: 'Total Claims', value: reportData.total_claims || 0, type: 'total' },
-    { label: 'True',       value: reportData.true_count || 0,   type: 'true' },
-    { label: 'False',      value: reportData.false_count || 0,  type: 'false' },
-    { label: 'Partial',    value: reportData.partial_count || 0, type: 'partial' },
+    { label: 'Total',        value: stats.total,        type: 'total' },
+    { label: 'True',         value: stats.true,         type: 'true' },
+    { label: 'False',        value: stats.false,        type: 'false' },
+    { label: 'Partial',      value: stats.partial,      type: 'partial' },
+    { label: 'Unverifiable', value: stats.unverifiable, type: 'unverifiable' },
   ];
 
   const aiProbLabel = aiProb < 30 ? 'Low' : aiProb < 70 ? 'Medium' : 'High';
@@ -442,7 +466,7 @@ const FinalReportBlock = ({ reportData, query, onViewReport }) => {
     ? `High (${aiProb}%) — Likely AI Generated`
     : `${aiProbLabel} (${aiProb}%)`;
 
-  const glowColor = score < 40 ? 'rgba(239,68,68,0.15)' : score < 70 ? 'rgba(234,179,8,0.12)' : 'rgba(16,185,129,0.15)';
+  const glowColor = score === null ? 'rgba(255,255,255,0.05)' : score < 40 ? 'rgba(239,68,68,0.15)' : score < 70 ? 'rgba(234,179,8,0.12)' : 'rgba(16,185,129,0.15)';
 
   return (
     <div
@@ -492,12 +516,57 @@ const FinalReportBlock = ({ reportData, query, onViewReport }) => {
 
       <div className="vc-footer">
         <div className="vc-footer-brand">Verified by Factly AI ✦</div>
-        <button className="vc-view-report-btn" onClick={() => onViewReport?.(reportData, query)}>
-          View Full Report →
-        </button>
+        <div className="vc-footer-actions">
+          <PDFDownloadLink 
+            document={<PDFReport reportData={reportData} query={query} />} 
+            fileName={`factly-report-${reportData.id?.substring(0, 8)}-${new Date().toISOString().split('T')[0]}.pdf`}
+            style={{ textDecoration: 'none' }}
+          >
+            {({ blob, url, loading, error }) => (
+              <button className="vc-export-btn" disabled={loading}>
+                <Download size={14} />
+                <span>{loading ? '...' : 'Export'}</span>
+              </button>
+            )}
+          </PDFDownloadLink>
+          <button className="vc-view-report-btn" onClick={() => onViewReport?.(reportData, query)}>
+            View Report →
+          </button>
+        </div>
       </div>
     </div>
   );
 };
 
 export default ChatThread;
+
+// ─── API Exhausted Card ──────────────────────────────────────────────────
+const APIExhaustedCard = ({ onUpdateClick }) => {
+  return (
+    <div className="api-exhausted-card">
+      <div className="api-exhausted-header">
+        <span className="api-exhausted-title">⚠️ API Limit Reached</span>
+      </div>
+      <p className="api-exhausted-text">
+        Your API key has exceeded its usage quota. Please update your API key to continue verifying claims.
+      </p>
+      <button className="api-exhausted-btn" onClick={onUpdateClick}>
+        🔑 Update API Key →
+      </button>
+    </div>
+  );
+};
+
+// ─── No Claims Card ──────────────────────────────────────────────────────
+const NoClaimsCard = () => {
+  return (
+    <div className="no-claims-card">
+      <div className="no-claims-header">
+        <span className="no-claims-title">🔍 No Claims Found</span>
+      </div>
+      <p className="no-claims-text">
+        We couldn't find any verifiable factual claims in this text. Try submitting a statement with clear facts.
+      </p>
+    </div>
+  );
+};
