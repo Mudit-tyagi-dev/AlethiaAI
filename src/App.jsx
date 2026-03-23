@@ -6,6 +6,7 @@ import PricingModal from './components/PricingModal';
 import ChatThread from './components/Chat/ChatThread';
 import ReportScreen from './components/Report/ReportScreen';
 import useAppStore from './store/useAppStore';
+import useWSStore from './store/useWSStore';
 import { checkHealth, fetchReport } from './services/api';
 
 const FONT_SIZES = { Small: '13px', Medium: '15px', Large: '17px' };
@@ -27,7 +28,7 @@ function App() {
   const [chatSessionId, setChatSessionId] = React.useState(Date.now());
   const [reportScreenData, setReportScreenData] = React.useState(null);
   const [fontSize, setFontSize] = React.useState(
-    () => localStorage.getItem('alethia-fontsize') || 'Medium'
+    () => localStorage.getItem('factly-fontsize') || 'Medium'
   );
 
   useEffect(() => {
@@ -37,7 +38,7 @@ function App() {
   useEffect(() => {
     const px = FONT_SIZES[fontSize] || '15px';
     document.documentElement.style.fontSize = px;
-    localStorage.setItem('alethia-fontsize', fontSize);
+    localStorage.setItem('factly-fontsize', fontSize);
   }, [fontSize]);
 
   useEffect(() => {
@@ -47,9 +48,20 @@ function App() {
   const toggleTheme = () => setTheme(theme === 'dark' ? 'light' : 'dark');
 
   const handleHomeClick = () => {
+    useWSStore.getState().fullReset();
     setChatSessionId(Date.now());
     setReportScreenData(null);
     setIsSidebarOpen(false);
+  };
+
+  const handleSidebarToggle = () => {
+    // If we are on mobile (isSidebarOpen), clicking toggle should probably close it
+    // If we are on desktop, it toggles collapsed
+    if (window.innerWidth <= 768) {
+      setIsSidebarOpen(!isSidebarOpen);
+    } else {
+      setIsSidebarCollapsed(!isSidebarCollapsed);
+    }
   };
 
   const openSettingsOnApiTab = useCallback((warning = '') => {
@@ -68,7 +80,7 @@ function App() {
 
   const handleSidebarReportForScreen = useCallback(async (report) => {
     setIsSidebarOpen(false);
-    const apiKey = useAppStore.getState().apiKey || localStorage.getItem('alethia_api_key') || '';
+    const apiKey = useAppStore.getState().apiKey || localStorage.getItem('factly_api_key') || '';
     
     try {
       if (report.report_id) {
@@ -105,7 +117,7 @@ function App() {
       {/* Main Chat View - Hidden when ReportScreen is active to preserve state */}
       <div style={{ display: reportScreenData ? 'none' : 'contents' }}>
         <TopBar
-          toggleSidebar={() => setIsSidebarOpen((p) => !p)}
+          toggleSidebar={handleSidebarToggle}
           theme={theme}
           toggleTheme={toggleTheme}
           onHomeClick={handleHomeClick}

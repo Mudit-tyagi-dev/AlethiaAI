@@ -18,7 +18,7 @@ const useReportStore = create(
       })),
     }),
     {
-      name: 'alethia-reports',
+      name: 'factly-reports',
       partialize: (state) => ({ reports: state.reports }),
     }
   )

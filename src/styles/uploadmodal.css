@@ -379,10 +379,18 @@
   100% { transform: translateX(250%); }
 }
 
+.upload-modal-analysing-label {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-bottom: -10px;
+  text-align: center;
+}
+
 .upload-modal-uploading-text {
   font-size: 1.05rem;
   font-weight: 600;
-  color: var(--text-primary);
+  color: #7c5cfc;
   animation: pulseText 1.5s infinite;
   text-align: center;
 }

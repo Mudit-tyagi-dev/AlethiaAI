@@ -27,26 +27,29 @@ const TruthMeter = ({ score }) => {
   const filledCount = Math.round((animatedScore / 100) * SEGMENTS);
 
   return (
-    <div className="truth-meter-container">
-      <div className="truth-meter-labels" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-        <span className="tm-label-false" style={{ color: '#ef4444', fontWeight: 'bold' }}>FALSE</span>
-        <span className="tm-label-true" style={{ color: '#10b981', fontWeight: 'bold' }}>TRUE</span>
+    <div className="truth-meter-container" style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+      <div className="truth-meter-labels" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: '4px' }}>
+        <span className="tm-label-false" style={{ color: '#ef4444', fontWeight: 'bold', fontSize: '0.75rem' }}>FALSE</span>
+        <span className="tm-label-true" style={{ color: '#10b981', fontWeight: 'bold', fontSize: '0.75rem' }}>TRUE</span>
       </div>
-      <div className="truth-meter-bar">
+      <div className="truth-meter-bar" style={{ display: 'flex', gap: '3px', width: '100%' }}>
         {Array.from({ length: SEGMENTS }).map((_, i) => (
           <div
             key={i}
             className="tm-segment"
             style={{
-              background: i < filledCount ? color : 'var(--card-border)',
-              opacity: i < filledCount ? 1 : 1
+              flex: 1,
+              height: '8px',
+              borderRadius: '2px',
+              background: i < filledCount ? color : 'var(--card-border, rgba(255,255,255,0.1))',
+              transition: 'background 0.4s ease'
             }}
           />
         ))}
       </div>
       <div className="truth-score-row" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '12px' }}>
-        <span className="truth-score-pct" style={{ color, fontSize: '1.4rem', fontWeight: 'bold', lineHeight: '1.2' }}>{animatedScore}%</span>
-        <span className="truth-meter-label" style={{ fontSize: '0.65rem', color: 'var(--text-tertiary)', fontWeight: 'bold', marginTop: '2px', letterSpacing: '0.5px' }}>TRUTH SCORE</span>
+        <div className="truth-score-pct" style={{ color, fontSize: '1.6rem', fontWeight: '800', lineHeight: '1.2' }}>{animatedScore}%</div>
+        <div className="truth-meter-label" style={{ fontSize: '0.65rem', color: 'var(--text-tertiary)', fontWeight: '700', marginTop: '2px', letterSpacing: '1px', textTransform: 'uppercase' }}>TRUTH SCORE</div>
       </div>
     </div>
   );

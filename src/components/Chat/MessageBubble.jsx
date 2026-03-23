@@ -76,7 +76,7 @@ const MessageBubble = ({ message, onReply }) => {
               />
             ))}
 
-            <div className="report-footer">Verified by AlethiaAI</div>
+            <div className="report-footer">Verified by Factly AI</div>
           </div>
           {ts}
         </div>

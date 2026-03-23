@@ -24,13 +24,8 @@
 .sidebar-collapsed { width: 60px; }
 
 /* Header */
-.sidebar-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 14px 12px;
-  border-bottom: 1px solid var(--card-border);
-  min-height: 57px;
+.sidebar-header-minimal {
+  height: 24px;
 }
 
 .logo-symbol-only {

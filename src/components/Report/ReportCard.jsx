@@ -37,7 +37,7 @@ const ReportCard = ({ claim, total = 1, index = 0 }) => {
       </div>
 
       <div className="report-footer">
-        Verified by AlethiaAI Language Model
+        Verified by Factly AI Language Model
       </div>
     </div>
   );

@@ -25,17 +25,7 @@ const Sidebar = ({ isOpen, onClose, onHomeClick, isCollapsed, onToggleCollapse, 
 
       <aside className={`sidebar persistent ${isCollapsed ? 'sidebar-collapsed' : 'sidebar-expanded'}`}>
         {/* Header */}
-        <div className="sidebar-header">
-          {!isCollapsed && <div className="logo" />}
-          {isCollapsed && <span className="logo-symbol-only">◈</span>}
-          <button
-            className="collapse-toggle"
-            onClick={onToggleCollapse}
-            title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          >
-            {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
-          </button>
-        </div>
+        <div className="sidebar-header-minimal" />
 
         {/* Nav */}
         <nav className="sidebar-nav">
@@ -66,8 +56,8 @@ const Sidebar = ({ isOpen, onClose, onHomeClick, isCollapsed, onToggleCollapse, 
                         </div>
                         <div className="history-meta">
                           <span className="history-date">{formatSidebarDate(report.date)}</span>
-                          <span className={`history-score ${score >= 70 ? 'good' : score >= 40 ? 'warning' : 'bad'}`}>
-                            {score}%
+                          <span className={`history-score ${score >= 0.7 ? 'good' : score >= 0.4 ? 'warning' : 'bad'}`}>
+                            {Math.round(score * 100)}%
                           </span>
                         </div>
                       </li>

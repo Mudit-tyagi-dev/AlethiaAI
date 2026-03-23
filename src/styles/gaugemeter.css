@@ -1,0 +1,114 @@
+/* src/styles/gaugemeter.css */
+
+.gauge-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  user-select: none;
+}
+
+.gauge-svg {
+  filter: drop-shadow(0 4px 10px rgba(0,0,0,0.1));
+}
+
+.gauge-bg-track {
+  stroke: rgba(255, 255, 255, 0.08);
+  fill: none;
+}
+
+[data-theme="light"] .gauge-bg-track {
+  stroke: rgba(0, 0, 0, 0.06);
+}
+
+.gauge-fill {
+  fill: none;
+  stroke-dasharray: 251.32; /* pi * radius(80) */
+  transition: stroke-dashoffset 1.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.gauge-glow {
+  filter: blur(4px);
+  opacity: 0.5;
+}
+
+.gauge-needle-group {
+  transition: transform 1.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.gauge-center-content {
+  position: absolute;
+  top: 62%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+}
+
+.gauge-number {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 800;
+  line-height: 1;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.gauge-label {
+  font-size: 9px;
+  color: var(--text-tertiary);
+  letter-spacing: 2px;
+  font-weight: 700;
+  margin-top: 8px;
+  opacity: 0.5;
+  text-transform: uppercase;
+}
+
+/* Simplified Badge Styles */
+.gauge-badge-container {
+  margin-top: -6px;
+  display: flex;
+  justify-content: center;
+  animation: badgeFadeInMod 0.6s ease forwards;
+  animation-delay: 1s;
+  opacity: 0;
+}
+
+@keyframes badgeFadeInMod {
+  from { opacity: 0; transform: translateY(2px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.gauge-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 99px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  animation: badgeFadeInMod 0.6s ease forwards;
+  animation-delay: 0.8s;
+  opacity: 0;
+}
+
+[data-theme="light"] .gauge-badge {
+  background: rgba(0, 0, 0, 0.03);
+  border-color: rgba(0, 0, 0, 0.06);
+}
+
+.gauge-badge--ai { color: #ff3366; box-shadow: 0 0 10px rgba(255, 51, 102, 0.1); }
+.gauge-badge--uncertain { color: #ffbb00; box-shadow: 0 0 10px rgba(255, 187, 0, 0.1); }
+.gauge-badge--human { color: #00ff88; box-shadow: 0 0 10px rgba(0, 255, 136, 0.1); }
+
+.badge-dot-mini {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+}
+.gauge-badge--ai .badge-dot-mini { background: #ff3366; }
+.gauge-badge--uncertain .badge-dot-mini { background: #ffbb00; }
+.gauge-badge--human .badge-dot-mini { background: #00ff88; }

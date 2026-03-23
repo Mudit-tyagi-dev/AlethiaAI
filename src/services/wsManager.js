@@ -3,51 +3,30 @@ import useReportStore from '../store/useReportStore';
 
 const WS_URL = 'wss://factify-backend-tcup.onrender.com/ws/verify';
 let ws = null;
-let connectionPromise = null;
 
 export const ensureConnected = () => {
-  // If we already have an open connection, return it immediately
-  if (ws && ws.readyState === WebSocket.OPEN) {
-    return Promise.resolve(ws);
-  }
-  
-  // If we are already in the process of connecting, wait for that promise to resolve
-  if (connectionPromise) {
-    return connectionPromise;
-  }
-
-  // Otherwise, start a new connection
-  connectionPromise = new Promise((resolve, reject) => {
+  return new Promise((resolve, reject) => {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      resolve(ws);
+      return;
+    }
     ws = new WebSocket(WS_URL);
-    
     ws.onopen = () => {
       useWSStore.getState().setConnected(true);
       resolve(ws);
-      connectionPromise = null;
     };
-    
-    ws.onerror = (e) => {
-      reject(e);
-      connectionPromise = null;
-    };
-    
+    ws.onerror = (e) => reject(e);
     ws.onclose = () => {
       useWSStore.getState().setConnected(false);
       ws = null;
-      connectionPromise = null;
     };
-    
     ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
         handleMessage(data);
-      } catch (e) {
-        // Ignore parse errors
-      }
+      } catch (e) {}
     };
   });
-  
-  return connectionPromise;
 };
 
 export const sendMessage = async (payload) => {
@@ -57,24 +36,11 @@ export const sendMessage = async (payload) => {
 
 const handleMessage = (data) => {
   const store = useWSStore.getState();
-  
-  if (data.event === 'error') {
-    store.setError(data.message);
-    store.setProcessing(false);
-    
-    const claims = store.claims;
-    Object.keys(claims).forEach(id => {
-      const claim = claims[id];
-      if (claim.status === 'searching' || claim.status === 'verifying') {
-        store.updateClaim(id, { status: 'error' });
-      }
-    });
-  }
 
   if (data.event === 'stage') {
     store.setPipeline(data.stage, data.progress * 100);
   }
-  
+
   if (data.event === 'claim_found') {
     store.addClaim({
       claim_id: data.claim_id,
@@ -82,7 +48,7 @@ const handleMessage = (data) => {
       status: 'searching'
     });
   }
-  
+
   if (data.event === 'search_done') {
     store.updateClaim(data.claim_id, {
       sources: data.sources || [],
@@ -91,7 +57,7 @@ const handleMessage = (data) => {
       status: 'verifying'
     });
   }
-  
+
   if (data.event === 'claim_verified') {
     store.updateClaim(data.claim_id, {
       verdict: data.verdict,
@@ -102,15 +68,13 @@ const handleMessage = (data) => {
       status: 'verified'
     });
   }
-  
+
   if (data.event === 'report_done') {
     store.setProcessing(false);
-    
     const trueCount = data['true'] ?? 0;
     const falseCount = data['false'] ?? 0;
     const partialCount = data['partial'] ?? 0;
     const unverifiableCount = data['unverifiable'] ?? 0;
-    
     const title = store.currentQuery?.substring(0, 40) || 'Report';
     const reportObj = {
       report_id: data.report_id,
@@ -126,7 +90,6 @@ const handleMessage = (data) => {
       title: title,
       query: store.currentQuery || ''
     };
-
     useReportStore.getState().addReport(reportObj);
     store.setFinalReport(reportObj);
   }

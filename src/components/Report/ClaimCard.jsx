@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ChevronDown, ChevronUp, Copy, AlertTriangle } from 'lucide-react';
+import useWSStore from '../../store/useWSStore';
 import '../../styles/claimcard.css';
 
 // Infer category from claim text
@@ -121,6 +122,7 @@ const ClaimCard = ({ claim, index = 0 }) => {
   const [expanded, setExpanded] = useState(false);
   const [copied, setCopied] = useState(false);
 
+
   const {
     text = '',
     status = 'pending',
@@ -129,6 +131,7 @@ const ClaimCard = ({ claim, index = 0 }) => {
     reasoning = '',
     sources = [],
     conflicting = false,
+    search_query = '',
   } = claim;
 
   const verdictMeta = verdict ? VERDICT_META[verdict] || { label: verdict.toUpperCase(), cls: 'verdict-unverifiable' } : null;
@@ -148,6 +151,7 @@ const ClaimCard = ({ claim, index = 0 }) => {
       className={`claim-card-new slide-in-card ${expanded ? 'card-expanded' : 'card-collapsed'}`}
       style={{ animationDelay: `${index * 80}ms` }}
       data-verdict={verdict}
+      data-status={status}
       onClick={() => status === 'verified' && setExpanded(p => !p)}
     >
       {/* ── COLLAPSED ROW ── */}
@@ -158,13 +162,18 @@ const ClaimCard = ({ claim, index = 0 }) => {
               <span className="verdict-dot-new" />
               {verdictMeta.label}
             </span>
-          ) : status === 'error' ? (
-            <span className={`verdict-pill-new verdict-false`}>
-              <span className="verdict-dot-new" />
-              FAILED
+          ) : status === 'searching' ? (
+            <span className="verdict-pill-new verdict-pending pulse-anim">
+              <span className="status-spinner" style={{ width: '6px', height: '6px', marginRight: '4px' }} />
+              SEARCHING
+            </span>
+          ) : status === 'verifying' ? (
+            <span className="verdict-pill-new verdict-pending pulse-anim">
+              <span className="status-spinner" style={{ width: '6px', height: '6px', marginRight: '4px' }} />
+              VERIFYING
             </span>
           ) : (
-            <span className={`verdict-pill-new verdict-pending ${status === 'pending' ? 'pulse-anim' : ''}`}>
+            <span className={`verdict-pill-new verdict-pending pulse-anim`}>
               <span className="verdict-dot-new" />
               PENDING
             </span>
@@ -172,11 +181,17 @@ const ClaimCard = ({ claim, index = 0 }) => {
         </div>
 
         <div className="card-center">
-          <p className={`card-claim-text ${expanded ? '' : 'text-truncated'}`}>{text}</p>
+          <p className={`card-claim-text ${expanded ? '' : 'text-truncated'}`}>
+            {text}
+          </p>
+          {search_query && !expanded && (
+            <div className="claim-search-query">
+              🔍 Searched: "{search_query}"
+            </div>
+          )}
         </div>
 
         <div className="card-right">
-          {status !== 'verified' && <StatusBadge status={status} />}
           {verdictMeta && (
             <div className="confidence-inline">
               <span className="confidence-pct">{confidencePct}%</span>
@@ -206,18 +221,26 @@ const ClaimCard = ({ claim, index = 0 }) => {
         <div className="card-expanded-inner">
           <div className="cf-divider" />
 
-          {/* AI ANALYSIS */}
+           {/* AI ANALYSIS */}
           {reasoning && (
             <div className="cf-section">
               <div className="cf-section-label">AI ANALYSIS</div>
               <p className="cf-regular">{reasoning}</p>
             </div>
           )}
-
+          
           {/* SOURCES */}
           {sources.length > 0 && (
             <div className="cf-section">
               <div className="cf-section-label">SOURCES ({sources.length} found)</div>
+              
+              {search_query && (
+                <div className="claim-search-query-full">
+                  <span>SEARCH QUERY</span>
+                  <span>"{search_query}"</span>
+                </div>
+              )}
+
               <div className="source-cards-new">
                 {sources.map((src, i) => (
                   <SourceCard

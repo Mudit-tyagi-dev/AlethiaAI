@@ -198,44 +198,61 @@
 }
 
 .rs-kpi-card {
-  background: rgba(255,255,255,0.03);
+  background: rgba(255, 255, 255, 0.03);
   border: 1px solid var(--card-border);
   border-radius: 14px;
-  padding: 18px 16px;
+  padding: 20px 16px;
   text-align: center;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
 }
 
 .rs-kpi-card:hover {
   transform: translateY(-3px);
-  box-shadow: 0 6px 20px rgba(255,255,255,0.08);
-  border-color: rgba(255,255,255,0.2);
+  border-color: rgba(255, 255, 255, 0.2);
 }
-.rs-kpi-card.kpi-t:hover { border-color: rgba(16,185,129,0.3); box-shadow: 0 6px 20px rgba(16,185,129,0.15); }
-.rs-kpi-card.kpi-f:hover { border-color: rgba(239,68,68,0.3); box-shadow: 0 6px 20px rgba(239,68,68,0.15); }
-.rs-kpi-card.kpi-p:hover { border-color: rgba(234,179,8,0.3); box-shadow: 0 6px 20px rgba(234,179,8,0.15); }
+
+.rs-kpi-icon {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  margin-bottom: 4px;
+}
 
 .rs-kpi-value {
-  font-size: 2rem;
+  font-size: 1.8rem;
   font-weight: 800;
   line-height: 1;
-  margin-bottom: 6px;
+  font-family: 'JetBrains Mono', monospace;
 }
 
 .rs-kpi-label {
-  font-size: 0.68rem;
-  font-weight: 600;
+  font-size: 0.65rem;
+  font-weight: 700;
   color: var(--text-tertiary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
+.kpi-total .rs-kpi-icon { background: rgba(255, 255, 255, 0.05); color: var(--text-secondary); }
 .kpi-total .rs-kpi-value { color: var(--text-primary); }
-.kpi-t    .rs-kpi-value  { color: #10b981; text-shadow: 0 0 10px rgba(16,185,129,0.3); }
-.kpi-f    .rs-kpi-value  { color: #ef4444; text-shadow: 0 0 10px rgba(239,68,68,0.3); }
-.kpi-p    .rs-kpi-value  { color: #eab308; text-shadow: 0 0 10px rgba(234,179,8,0.3); }
+
+.kpi-t .rs-kpi-icon { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+.kpi-t .rs-kpi-value { color: #10b981; }
+
+.kpi-f .rs-kpi-icon { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+.kpi-f .rs-kpi-value { color: #ef4444; }
+
+.kpi-p .rs-kpi-icon { background: rgba(234, 179, 8, 0.1); color: #eab308; }
+.kpi-p .rs-kpi-value { color: #eab308; }
 
 /* ── Claims Section ───────────────────────────────────────────────────────── */
 .rs-claims-section {

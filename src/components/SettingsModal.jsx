@@ -12,7 +12,7 @@ const SettingsModal = ({ onClose, theme, toggleTheme, fontSize, setFontSize, ini
 
   // Load API key from localStorage on mount
   useEffect(() => {
-    const stored = localStorage.getItem('alethia_api_key') || '';
+    const stored = localStorage.getItem('factly_api_key') || '';
     setApiKey(stored);
   }, []);
 
@@ -24,7 +24,7 @@ const SettingsModal = ({ onClose, theme, toggleTheme, fontSize, setFontSize, ini
   const handleApiKeyChange = (e) => {
     const val = e.target.value;
     setApiKey(val);
-    localStorage.setItem('alethia_api_key', val);
+    localStorage.setItem('factly_api_key', val);
     setSaved(true);
     setTimeout(() => setSaved(false), 1500);
   };

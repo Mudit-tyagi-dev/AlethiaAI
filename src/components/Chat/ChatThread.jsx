@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import MessageBubble from './MessageBubble';
 import InputBar from './InputBar';
 import LandingScreen from '../LandingScreen';
+import GaugeMeter from '../GaugeMeter';
 import '../../styles/chatbox.css';
 import '../../styles/landing.css';
 import '../../styles/chatthread.css';
@@ -11,7 +12,7 @@ import useAppStore from '../../store/useAppStore';
 import { sendMessage } from '../../services/wsManager';
 import { detectText, detectImage, detectPdf } from '../../services/api';
 
-const TIMEOUT_MS = 60000;
+
 
 const STAGE_LABELS = {
   extracting: '⚡ Extracting Claims...',
@@ -48,11 +49,9 @@ const ChatThread = ({ openSettingsOnApiTab, onViewReport }) => {
 
   const defaultStage = inputMode !== 'fact-check' ? '🔬 Analyzing...' : '⚡ Processing...';
   const stageLabel = pipelineStage ? (STAGE_LABELS[pipelineStage] || pipelineStage) : defaultStage;
-  const [showTimeoutWarning, setShowTimeoutWarning] = useState(false);
   const [showReconnectBanner, setShowReconnectBanner] = useState(false); // To satisfy old usages
 
   const bottomRef = useRef(null);
-  const timeoutRef = useRef(null);
   const currentQueryModeRef = useRef('fact-check');
 
   const isLanding = messages.length === 0;
@@ -69,7 +68,7 @@ const ChatThread = ({ openSettingsOnApiTab, onViewReport }) => {
   const handleSend = useCallback(async (textOrFile) => {
     console.log('SEND BUTTON CLICKED', textOrFile);
     
-    const apiKey = useAppStore.getState().apiKey || localStorage.getItem('alethia_api_key') || '';
+    const apiKey = useAppStore.getState().apiKey || localStorage.getItem('factly_api_key') || '';
     if (!apiKey.trim()) {
       openSettingsOnApiTab('Please add your API key to continue');
       return;
@@ -82,7 +81,6 @@ const ChatThread = ({ openSettingsOnApiTab, onViewReport }) => {
     const queryStr = typeof textOrFile === 'string' ? textOrFile : textOrFile.name;
     store.setCurrentQuery(queryStr);
 
-    setShowTimeoutWarning(false);
     currentQueryModeRef.current = inputMode;
 
     const msgId = Date.now();
@@ -91,13 +89,8 @@ const ChatThread = ({ openSettingsOnApiTab, onViewReport }) => {
 
     try {
       if (inputMode === 'fact-check') {
-        const payload = { content: textOrFile, api_key: apiKey };
+        const payload = { action: 'verify', content: textOrFile, api_key: apiKey };
         await sendMessage(payload);
-
-        clearTimeout(timeoutRef.current);
-        timeoutRef.current = setTimeout(() => {
-          setShowTimeoutWarning(true);
-        }, TIMEOUT_MS);
       } else {
         // AI Detection Modes
         let result;
@@ -115,15 +108,14 @@ const ChatThread = ({ openSettingsOnApiTab, onViewReport }) => {
 
         const reportObj = {
           report_id: result.id,
-          ai_text_probability: result.ai_probability, 
           result_status: result.result,
           confidence: result.confidence,
           signals: result.signals,
           processing_time_ms: result.processing_time_ms,
           previewUrl
         };
-        store.setProcessing(false);
         store.setFinalReport(reportObj);
+        store.setProcessing(false);
       }
     } catch (err) {
       console.error('API/WS Error:', err);
@@ -160,12 +152,7 @@ const ChatThread = ({ openSettingsOnApiTab, onViewReport }) => {
               <MessageBubble key={msg.id} message={msg} onReply={handleReplyRequest} />
             ))}
 
-            {error && (
-              <div className="ct-verification-error-container">
-                <div className="ct-verification-error-title">Verification Error</div>
-                <div className="ct-verification-error-msg">{error}</div>
-              </div>
-            )}
+
 
             {isVerifying && currentQueryModeRef.current !== 'ai-text' && currentQueryModeRef.current !== 'ai-image' && currentQueryModeRef.current !== 'ai-pdf' && (
               <div className="ws-pipeline-block">
@@ -231,11 +218,7 @@ const ChatThread = ({ openSettingsOnApiTab, onViewReport }) => {
               )
             )}
 
-            {showTimeoutWarning && (
-              <div className="timeout-warning">
-                ⏳ Verification is taking longer than usual...
-              </div>
-            )}
+
 
             <div ref={bottomRef} className="chat-bottom-spacer" />
           </div>
@@ -298,9 +281,17 @@ const AIDetectionResultCard = ({ reportData, query, mode }) => {
   const [animTime, setAnimTime] = useState(0);
   const [animProb, setAnimProb] = useState(0);
   
-  const aiProb = Math.round((reportData.confidence || 0) * 100);
+  const rawValue = reportData.confidence || 0;
+  const aiProb = Math.round(rawValue * 100);
   const totalTimeSec = ((reportData.processing_time_ms || 0) / 1000).toFixed(1);
-  const resultStatus = reportData.result_status || 'uncertain';
+  
+  let resultStatus = reportData.result_status || 'uncertain';
+  if (mode === 'ai-text' && !reportData.result_status) {
+    if (rawValue < 0.3) resultStatus = 'human_written';
+    else if (rawValue > 0.7) resultStatus = 'ai_generated';
+    else resultStatus = 'uncertain';
+  }
+  
   const signals = reportData.signals || [];
   
   useEffect(() => {
@@ -317,88 +308,94 @@ const AIDetectionResultCard = ({ reportData, query, mode }) => {
   }, [totalTimeSec, aiProb]);
 
   let typeName = mode === 'ai-image' ? 'Image' : mode === 'ai-pdf' ? 'Document' : 'Text';
-  let label = 'Uncertain / Mixed Signals';
+  let label = 'Uncertain Signals';
   let colorClass = 'ai-mixed';
   let headerIcon = '🟡';
-  let titleIcon = mode === 'ai-image' ? '' : mode === 'ai-pdf' ? '📄' : '';
   
   if (resultStatus === 'ai_generated') {
-    label = `Likely AI Generated ${typeName}`;
+    label = 'Likely AI Generated';
     colorClass = 'ai-ai';
     headerIcon = '🔴';
   } else if (resultStatus === 'human_written') {
-    label = mode === 'ai-image' ? 'Likely Real Image' : `Likely Human Written ${typeName}`;
+    label = mode === 'ai-image' ? 'Likely Real Image' : 'Likely Human Written';
     colorClass = 'ai-human';
     headerIcon = '🟢';
   }
 
-  const rotation = (animProb / 100) * 180 - 90;
+  const confidenceColor = resultStatus === 'human_written' ? '#10b981' : resultStatus === 'uncertain' ? '#eab308' : '#ef4444';
+
+  const dateObj = new Date();
+  const formattedDate = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const formattedTime = dateObj.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
 
   return (
-      <div className={`ai-text-result-card ${colorClass}`}>
-        <div className="ai-img-header-row">
-          <div className="ai-img-header-left">
-            <div className={`ai-img-badge ai-banner-${colorClass}`}>
-              {headerIcon} {label}
-            </div>
-            <div className="ai-text-title ct-ai-text-title">{titleIcon} AI {typeName} Analysis</div>
-            {mode === 'ai-text' ? (
-              <div className="ai-text-query-scrollable">{query}</div>
-            ) : (
-              <div className="ai-text-query">{query}</div>
-            )}
+    <div className={`ai-text-result-card ${colorClass}`}>
+      <div className="ai-img-header-v3">
+        <div className="ai-img-header-left-v3">
+          <div className={`gauge-badge gauge-badge--${resultStatus.replace('_', '-')}`} style={{ marginBottom: '12px', alignSelf: 'flex-start' }}>
+            <span className="badge-dot-mini" />
+            {label}
           </div>
+          <div className="ai-text-title ct-ai-text-title">AI {typeName} Analysis</div>
+          {mode === 'ai-text' ? (
+            <div className="ai-text-query-scrollable">{query}</div>
+          ) : (
+            <div className="ai-text-query">{query}</div>
+          )}
           
-          <div className="ai-img-header-right">
-            <div className="ai-text-gauge-container ct-ai-gauge-wrapper">
-              <svg viewBox="0 0 200 110" className="ai-gauge-svg">
-                <path d="M 15 95 A 80 80 0 0 1 185 95" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="16" strokeLinecap="round" />
-                <defs>
-                  <linearGradient id="aiGaugeGradImage" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" stopColor="#10b981" />
-                    <stop offset="50%" stopColor="#eab308" />
-                    <stop offset="100%" stopColor="#ef4444" />
-                  </linearGradient>
-                </defs>
-                <path d="M 15 95 A 80 80 0 0 1 185 95" fill="none" stroke="url(#aiGaugeGradImage)" strokeWidth="16" strokeLinecap="round" 
-                  strokeDasharray="251.2" strokeDashoffset={251.2 - (251.2 * animProb / 100)} 
-                  className="ai-gauge-fill-path" />
-              </svg>
-              <div className="ai-gauge-needle ct-ai-gauge-needle" style={{ transform: `rotate(${rotation}deg)` }}>
-                <div className="ai-needle-base ct-ai-needle-base"></div>
-                <div className="ai-needle-point ct-ai-needle-point"></div>
-              </div>
-              
-              <div className="ai-gauge-center-text ct-ai-gauge-center">
-                <div className="ai-gauge-score ct-ai-gauge-score">{animProb}%</div>
-                <div className="ai-gauge-label ct-ai-gauge-label">PROBABILITY</div>
-              </div>
+          <div className="ai-img-footer-v3" style={{ borderTop: 'none', marginTop: '12px', paddingTop: 0 }}>
+            <div className="footer-left">
+              <span>⏱️ {animTime}s</span>
+              <span style={{ opacity: 0.5, margin: '0 8px' }}>•</span>
+              <span>{formattedDate} {formattedTime}</span>
             </div>
           </div>
         </div>
-      
-      <div className="ai-text-divider" />
-      
+
+        <div className="ai-img-header-right-v3">
+          <GaugeMeter 
+            value={Math.round((reportData.confidence || 0) * 100)} 
+            result={resultStatus} 
+          />
+        </div>
+      </div>
+
+      <div className="ai-confidence-bar-section-v4">
+        <div className="ai-confidence-label-v4">AI CONFIDENCE</div>
+        <div className="ai-confidence-row-v4">
+          <div className="ai-confidence-track-v4">
+            <div 
+              className="ai-confidence-fill-v4" 
+              style={{ 
+                width: `${Math.round((reportData.confidence || 0) * 100)}%`, 
+                background: confidenceColor,
+                boxShadow: `0 0 10px ${confidenceColor}44`
+              }} 
+            />
+          </div>
+          <div className="ai-confidence-value-v4" style={{ color: confidenceColor }}>
+            {animProb}%
+          </div>
+        </div>
+      </div>
+
       {reportData.previewUrl && (
-        <div className="ai-img-preview-container">
+        <div className="ai-img-preview-container" style={{ marginTop: '10px', marginBottom: '20px' }}>
           <img src={reportData.previewUrl} alt="Analyzed" />
         </div>
       )}
 
-      {signals && signals.length > 0 && (
-        <div className="ai-img-signals-container">
-          <div className="ai-img-signals-title">🔬 Detection Reasoning</div>
-          <ul className="ai-img-signals-list">
-            {signals.map((sig, i) => (
-              <li key={i}>{sig}</li>
-            ))}
-          </ul>
-        </div>
-      )}
-      
-      <div className="ai-img-footer">
-        <span className="ai-img-time-badge">⏱️ {animTime}s</span>
-        <span className="ai-text-timestamp">Analyzed: {new Date().toLocaleString()}</span>
+      <div className="ai-img-content-v3">
+        {signals && signals.length > 0 && (
+          <div className="ai-img-signals-container-v3">
+            <div className="ai-img-signals-title-v3">🔍 SIGNALS (Reasoning):</div>
+            <ul className="ai-img-signals-list-v3">
+              {signals.map((sig, i) => (
+                <li key={i}>• {sig}</li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -430,66 +427,72 @@ const FinalReportBlock = ({ reportData, query, onViewReport }) => {
   const aiProb = Math.round((reportData.ai_text_probability || 0) * 100);
 
   const kpiData = [
-    { label: 'Total Claims', value: reportData.total_claims || 0, cls: 'kpi-grid-total' },
-    { label: '✓ True',       value: reportData.true_count || 0,   cls: 'kpi-grid-true' },
-    { label: '✗ False',      value: reportData.false_count || 0,  cls: 'kpi-grid-false' },
-    { label: '~ Partial',    value: reportData.partial_count || 0, cls: 'kpi-grid-partial' },
+    { label: 'Total Claims', value: reportData.total_claims || 0, type: 'total' },
+    { label: 'True',       value: reportData.true_count || 0,   type: 'true' },
+    { label: 'False',      value: reportData.false_count || 0,  type: 'false' },
+    { label: 'Partial',    value: reportData.partial_count || 0, type: 'partial' },
   ];
 
   const aiProbLabel = aiProb < 30 ? 'Low' : aiProb < 70 ? 'Medium' : 'High';
   let aiProbColor = '#10b981';
-  let aiProbBg = 'rgba(16,185,129,0.06)';
-  if (aiProb >= 30 && aiProb < 70) { aiProbColor = '#eab308'; aiProbBg = 'rgba(234,179,8,0.06)'; }
-  if (aiProb >= 70) { aiProbColor = '#ef4444'; aiProbBg = 'rgba(239,68,68,0.06)'; }
+  if (aiProb >= 30 && aiProb < 70) aiProbColor = '#eab308';
+  if (aiProb >= 70) aiProbColor = '#ef4444';
+  
   const aiProbText = aiProb >= 70
     ? `High (${aiProb}%) — Likely AI Generated`
     : `${aiProbLabel} (${aiProb}%)`;
 
-  const glowColor = score < 40 ? 'rgba(239,68,68,0.12)' : score < 70 ? 'rgba(234,179,8,0.10)' : 'rgba(16,185,129,0.12)';
+  const glowColor = score < 40 ? 'rgba(239,68,68,0.15)' : score < 70 ? 'rgba(234,179,8,0.12)' : 'rgba(16,185,129,0.15)';
 
   return (
     <div
-      className="final-report-block-v2 slideUpFadeIn"
-      style={{ boxShadow: `0 8px 40px ${glowColor}` }}
+      className="vc-card slideUpFadeIn"
+      style={{ '--score-glow': glowColor }}
     >
-      <div className="frb-top-row">
-        <div className="frb-top-left">
-          <span className="frb-title">✦ Verification Complete</span>
-          {query && <span className="frb-query">"{query}"</span>}
+      <div className="vc-header">
+        <div className="vc-header-left">
+          <h3 className="vc-title">✦ Verification Complete</h3>
+          {query && <p className="vc-query">"{query}"</p>}
         </div>
-        <span className="frb-timestamp">{new Date().toLocaleString()}</span>
+        <div className="vc-timestamp">{new Date().toLocaleString([], { hour: '2-digit', minute: '2-digit' })}</div>
       </div>
 
-      <div className="frb-divider" />
+      <div className="vc-divider" />
 
-      <TruthMeter score={score} />
+      <div className="vc-meter-section">
+        <TruthMeter score={score} />
+      </div>
 
-      <div className="frb-divider" />
+      <div className="vc-divider" />
 
-      <div className="frb-kpi-grid">
-        {kpiData.map(({ label, value, cls }) => (
-          <div key={label} className={`frb-kpi-cell ${cls}`}>
-            <div className="frb-kpi-value"><AnimatedKpi end={value} /></div>
-            <div className="frb-kpi-label">{label}</div>
+      <div className="vc-kpi-grid">
+        {kpiData.map((kpi) => (
+          <div key={kpi.label} className={`vc-kpi-cell vc-kpi-${kpi.type}`}>
+            <div className="vc-kpi-value">
+              <AnimatedKpi end={kpi.value} />
+            </div>
+            <div className="vc-kpi-label">
+              {kpi.type === 'true' && '✓ '}
+              {kpi.type === 'false' && '✗ '}
+              {kpi.type === 'partial' && '~ '}
+              {kpi.label}
+            </div>
           </div>
         ))}
       </div>
 
-      <div className="frb-divider" />
+      <div className="vc-divider" />
 
-      <div className="frb-ai-row" style={{ background: aiProbBg }}>
-        <span className="frb-ai-left">AI Text Probability</span>
-        <span className="frb-ai-badge" style={{ color: aiProbColor, borderColor: aiProbColor }}>
+      <div className="vc-ai-row">
+        <div className="vc-ai-label">🤖 AI Text Probability</div>
+        <div className="vc-ai-badge" style={{ color: aiProbColor, borderColor: `${aiProbColor}44`, background: `${aiProbColor}12` }}>
           {aiProbText}
-        </span>
+        </div>
       </div>
 
-      <div className="frb-footer">
-        <span className="frb-footer-brand">Verified by AlethiaAI ✦</span>
-        {reportData.report_id && (
-          <span className="frb-footer-id">ID: {reportData.report_id.slice(0, 8)}…</span>
-        )}
-        <button className="frb-view-report-btn" onClick={() => onViewReport?.(reportData, query)}>
+      <div className="vc-footer">
+        <div className="vc-footer-brand">Verified by Factly AI ✦</div>
+        <button className="vc-view-report-btn" onClick={() => onViewReport?.(reportData, query)}>
           View Full Report →
         </button>
       </div>

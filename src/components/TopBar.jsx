@@ -33,7 +33,7 @@ const TopBar = ({ toggleSidebar, theme, toggleTheme, onHomeClick, onNewChat, rep
   const handleCopyLink = () => {
     setShareOpen(false);
     const id = reportId || 'demo';
-    const url = `alethiaai.app/report/${id}`;
+    const url = `factlyai.app/report/${id}`;
     navigator.clipboard.writeText(url).catch(() => {});
     showToast('Link copied! Share it anywhere ✓');
   };
@@ -48,7 +48,7 @@ const TopBar = ({ toggleSidebar, theme, toggleTheme, onHomeClick, onNewChat, rep
   };
 
   const handleTitleClick = () => {
-    // AlethiaAI text = go home
+    // Factly AI text = go home
     onHomeClick?.();
   };
 
@@ -59,13 +59,16 @@ const TopBar = ({ toggleSidebar, theme, toggleTheme, onHomeClick, onNewChat, rep
 
       <header className="topbar">
         <div className="topbar-left">
-          <div className="logo" onClick={handleLogoClick} style={{ cursor: 'pointer' }}>
-            <span className={`logo-symbol logo-symbol-clickable ${logoSpining ? 'spin' : ''}`}>◈</span>
-            <span
+          <div className="topbar-logo-btn" onClick={handleLogoClick} title="Toggle Sidebar">
+            <span className={`logo-symbol ${logoSpining ? 'spin' : ''}`}>◈</span>
+            
+          </div>
+          <div>
+             <span
               className="logo-text logo-text-clickable"
               onClick={(e) => { e.stopPropagation(); handleTitleClick(); }}
             >
-              AlethiaAI
+              Factly AI
             </span>
           </div>
         </div>

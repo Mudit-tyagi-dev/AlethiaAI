@@ -379,10 +379,10 @@
   box-shadow: 0 4px 20px rgba(124,92,252,0.15);
 }
 
-.claim-card-new[data-verdict="True"]:hover { border-color: var(--accent-true); box-shadow: 0 4px 20px rgba(16,185,129,0.15); }
-.claim-card-new[data-verdict="False"]:hover { border-color: var(--accent-false); box-shadow: 0 4px 20px rgba(239,68,68,0.15); }
-.claim-card-new[data-verdict="Partial"]:hover { border-color: var(--accent-partial); box-shadow: 0 4px 20px rgba(234,179,8,0.15); }
-.claim-card-new[data-verdict="Unverifiable"]:hover { border-color: var(--accent-unverifiable); box-shadow: 0 4px 20px rgba(139,92,246,0.15); }
+.claim-card-new[data-status="error"] {
+  border-left: 4px solid var(--accent-false);
+  box-shadow: -4px 0 16px rgba(239, 68, 68, 0.15);
+}
 
 /* Cursor pointer only when verified (clickable) */
 .card-expanded,
@@ -674,4 +674,31 @@
   padding: 8px 0;
   display: flex;
   flex-direction: column;
+}
+
+/* 🔍 Search Query Styles */
+.claim-search-query {
+  font-size: 11px;
+  color: rgba(255,255,255,0.35);
+  font-style: italic;
+  margin-top: 4px;
+}
+
+.claim-search-query-full {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+.claim-search-query-full span:first-child {
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: rgba(255,255,255,0.3);
+  text-transform: uppercase;
+}
+.claim-search-query-full span:last-child {
+  font-size: 12px;
+  font-family: 'JetBrains Mono', monospace;
+  color: rgba(255,255,255,0.5);
+  font-style: italic;
 }

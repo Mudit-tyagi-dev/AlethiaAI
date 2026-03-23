@@ -45,6 +45,13 @@ const InputBar = ({ onSend, isProcessing, replyRequest, focusRequest, mode = 'fa
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
+  // Auto-close modal when processing finishes
+  useEffect(() => {
+    if (!isProcessing && isModalOpen) {
+      setIsModalOpen(false);
+    }
+  }, [isProcessing]);
+
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape' && showModes) {
@@ -144,7 +151,7 @@ const InputBar = ({ onSend, isProcessing, replyRequest, focusRequest, mode = 'fa
               >
                 <Image size={20} />
                 <span className="dropdown-item-text">AI Image</span>
-                <span className="dropdown-new-badge">New</span>
+                {/* <span className="dropdown-new-badge">New</span> */}
                 {mode === 'ai-image' && <Check size={16} />}
               </button>
 
@@ -155,7 +162,7 @@ const InputBar = ({ onSend, isProcessing, replyRequest, focusRequest, mode = 'fa
               >
                 <FileDigit size={20} />
                 <span className="dropdown-item-text">AI PDF</span>
-                <span className="dropdown-new-badge">New</span>
+                {/* <span className="dropdown-new-badge">New</span> */}
                 {mode === 'ai-pdf' && <Check size={16} />}
               </button>
             </div>
@@ -198,9 +205,10 @@ const InputBar = ({ onSend, isProcessing, replyRequest, focusRequest, mode = 'fa
               isOpen={isModalOpen} 
               onClose={() => setIsModalOpen(false)} 
               mode={mode} 
+              isProcessing={isProcessing}
               onSend={(uploadedFile) => {
                 onSend(uploadedFile);
-                setIsModalOpen(false);
+                // Modal stays open to show loading state
               }} 
             />
           </>

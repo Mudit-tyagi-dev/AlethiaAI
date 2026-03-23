@@ -3,10 +3,17 @@ import ReactDOM from 'react-dom';
 import { X, UploadCloud, File as FileIcon, AlertCircle, CheckCircle2 } from 'lucide-react';
 import '../../styles/uploadmodal.css';
 
-const UPLOADING_MESSAGES = [
-  "Uploading to AlethiaAI...",
+const IMAGE_LOADING_MESSAGES = [
+  "Uploading to Factly AI...",
   "Scanning visual patterns...",
   "Detecting AI signatures...",
+  "Finalizing results..."
+];
+
+const PDF_LOADING_MESSAGES = [
+  "Uploading document...",
+  "Extracting text content...",
+  "Analysing writing patterns...",
   "Finalizing results..."
 ];
 
@@ -28,14 +35,15 @@ const FileUploadModal = ({ isOpen, onClose, mode, onSend, isProcessing }) => {
   useEffect(() => {
     let timer;
     if (isProcessing) {
+      const messages = isImage ? IMAGE_LOADING_MESSAGES : PDF_LOADING_MESSAGES;
       timer = setInterval(() => {
-        setMsgIdx(prev => (prev + 1) % UPLOADING_MESSAGES.length);
+        setMsgIdx(prev => (prev + 1) % messages.length);
       }, 2000);
     } else {
       setMsgIdx(0);
     }
     return () => clearInterval(timer);
-  }, [isProcessing]);
+  }, [isProcessing, isImage]);
 
   useEffect(() => {
     if (isOpen) {
@@ -200,26 +208,6 @@ const FileUploadModal = ({ isOpen, onClose, mode, onSend, isProcessing }) => {
         }}
       >
         
-        <div className="upload-modal-header">
-          <div className="upload-modal-heading">
-            <div className="upload-modal-title">
-              {isImage ? ' AI Image Detection' : ' AI PDF Detection'}
-            </div>
-            <div className="upload-modal-subtitle">
-              {isImage ? 'Check if image is AI generated' : 'Check if document is AI generated'}
-            </div>
-          </div>
-          {!isProcessing && (
-            <button type="button" className="upload-modal-close" onClick={onClose}><X size={20} /></button>
-          )}
-        </div>
-
-        {error && (
-          <div className="upload-modal-error">
-            <AlertCircle size={16} /> {error}
-          </div>
-        )}
-
         {isProcessing ? (
           <div className="upload-modal-uploading-state">
             <div className="upload-modal-spinner-ring">
@@ -228,74 +216,102 @@ const FileUploadModal = ({ isOpen, onClose, mode, onSend, isProcessing }) => {
                 <circle cx="50" cy="50" r="45" fill="none" stroke="#7c5cfc" strokeWidth="8" strokeLinecap="round" className="spinner-progress" />
               </svg>
             </div>
-            <div className="upload-modal-uploading-text">{UPLOADING_MESSAGES[msgIdx]}</div>
+            
+            <div className="upload-modal-analysing-label">
+              Analysing {isImage ? 'Image' : 'Document'}...
+            </div>
+            
+            <div className="upload-modal-uploading-text">
+              {(isImage ? IMAGE_LOADING_MESSAGES : PDF_LOADING_MESSAGES)[msgIdx]}
+            </div>
+
             <div className="upload-modal-shimmer-bar">
               <div className="upload-modal-shimmer-fill" />
             </div>
           </div>
-        ) : !file ? (
-          <div 
-            className={`upload-modal-dropzone ${dragActive ? 'drag-active' : ''}`}
-            onDragEnter={handleDrag}
-            onDragLeave={handleDrag}
-            onDragOver={handleDrag}
-            onDrop={handleDrop}
-            onClick={() => fileInputRef.current?.click()}
-          >
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept={isImage ? 'image/jpeg, image/png, image/webp' : 'application/pdf'}
-              style={{ display: 'none' }}
-              onChange={handleChange}
-            />
-            <div className="upload-modal-icon-wrapper">
-              <UploadCloud size={52} strokeWidth={1.5} color="#8b5cf6" className="upload-modal-icon" />
-            </div>
-            <div className="upload-modal-text-primary">Drop {isImage ? 'image' : 'PDF'} here or click to browse</div>
-            <div className="upload-modal-text-secondary">
-              {isImage ? 'JPG, PNG, WEBP • Max 5MB' : 'PDF only • Max 5MB'}
-            </div>
-          </div>
         ) : (
-          <div className="upload-modal-selected">
-            {isImage && previewUrl ? (
-              <div className="upload-modal-img-preview">
-                <img src={previewUrl} alt="Preview" />
+          <>
+            <div className="upload-modal-header">
+              <div className="upload-modal-heading">
+                <div className="upload-modal-title">
+                  {isImage ? ' AI Image Detection' : ' AI PDF Detection'}
+                </div>
+                <div className="upload-modal-subtitle">
+                  {isImage ? 'Check if image is AI generated' : 'Check if document is AI generated'}
+                </div>
               </div>
-            ) : (
-              <div className="upload-modal-pdf-preview">
-                <FileIcon size={56} strokeWidth={1.5} color="#8b5cf6" />
-                <div className="pdf-preview-name">{file.name}</div>
+              <button type="button" className="upload-modal-close" onClick={onClose}><X size={20} /></button>
+            </div>
+
+            {error && (
+              <div className="upload-modal-error">
+                <AlertCircle size={16} /> {error}
               </div>
             )}
-            
-            <div className="upload-modal-file-status">
-              {isImage && previewUrl && <div className="file-status-name">{file.name}</div>}
-              <div className="file-status-metrics">
-                <div className={`file-status-size ${(file.size <= maxSize) ? 'valid' : 'invalid'}`}>
-                  {(file.size / 1024 / 1024).toFixed(2)} MB
-                </div>
-                {isCompressed && <div className="file-status-badge"><CheckCircle2 size={12} /> Optimized</div>}
-                {file.size <= maxSize && !isCompressed && <div className="file-status-badge valid"><CheckCircle2 size={12} /> Ready to analyse</div>}
-              </div>
-            </div>
-            <button type="button" className="upload-modal-remove-link" onClick={() => setFile(null)}>Choose different file</button>
-          </div>
-        )}
 
-        {!isProcessing && (
-          <div className="upload-modal-footer">
-            <button type="button" className="upload-modal-cancel" onClick={onClose}>Cancel</button>
-            <button 
-              type="button"
-              className="upload-modal-submit" 
-              onClick={handleUpload} 
-              disabled={!file || isCompressingLocally || file.size > maxSize}
-            >
-              {isCompressingLocally ? 'Compressing...' : `Analyse ${isImage ? 'Image' : 'PDF'} →`}
-            </button>
-          </div>
+            {!file ? (
+              <div 
+                className={`upload-modal-dropzone ${dragActive ? 'drag-active' : ''}`}
+                onDragEnter={handleDrag}
+                onDragLeave={handleDrag}
+                onDragOver={handleDrag}
+                onDrop={handleDrop}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept={isImage ? 'image/jpeg, image/png, image/webp' : 'application/pdf'}
+                  style={{ display: 'none' }}
+                  onChange={handleChange}
+                />
+                <div className="upload-modal-icon-wrapper">
+                  <UploadCloud size={52} strokeWidth={1.5} color="#8b5cf6" className="upload-modal-icon" />
+                </div>
+                <div className="upload-modal-text-primary">Drop {isImage ? 'image' : 'PDF'} here or click to browse</div>
+                <div className="upload-modal-text-secondary">
+                  {isImage ? 'JPG, PNG, WEBP • Max 5MB' : 'PDF only • Max 5MB'}
+                </div>
+              </div>
+            ) : (
+              <div className="upload-modal-selected">
+                {isImage && previewUrl ? (
+                  <div className="upload-modal-img-preview">
+                    <img src={previewUrl} alt="Preview" />
+                  </div>
+                ) : (
+                  <div className="upload-modal-pdf-preview">
+                    <FileIcon size={56} strokeWidth={1.5} color="#8b5cf6" />
+                    <div className="pdf-preview-name">{file.name}</div>
+                  </div>
+                )}
+                
+                <div className="upload-modal-file-status">
+                  {isImage && previewUrl && <div className="file-status-name">{file.name}</div>}
+                  <div className="file-status-metrics">
+                    <div className={`file-status-size ${(file.size <= maxSize) ? 'valid' : 'invalid'}`}>
+                      {(file.size / 1024 / 1024).toFixed(2)} MB
+                    </div>
+                    {isCompressed && <div className="file-status-badge"><CheckCircle2 size={12} /> Optimized</div>}
+                    {file.size <= maxSize && !isCompressed && <div className="file-status-badge valid"><CheckCircle2 size={12} /> Ready to analyse</div>}
+                  </div>
+                </div>
+                <button type="button" className="upload-modal-remove-link" onClick={() => setFile(null)}>Choose different file</button>
+              </div>
+            )}
+
+            <div className="upload-modal-footer">
+              <button type="button" className="upload-modal-cancel" onClick={onClose}>Cancel</button>
+              <button 
+                type="button"
+                className="upload-modal-submit" 
+                onClick={handleUpload} 
+                disabled={!file || isCompressingLocally || file.size > maxSize}
+              >
+                {isCompressingLocally ? 'Compressing...' : `Analyse ${isImage ? 'Image' : 'PDF'} →`}
+              </button>
+            </div>
+          </>
         )}
       </div>
     </div>,

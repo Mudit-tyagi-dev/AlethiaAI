@@ -30,7 +30,7 @@ const useAppStore = create(
       closeShare: () => set({ isShareOpen: false }),
     }),
     {
-      name: 'alethia-app-store',
+      name: 'factly-app-store',
       partialize: (state) => ({
         plan: state.plan,
         apiKey: state.apiKey,

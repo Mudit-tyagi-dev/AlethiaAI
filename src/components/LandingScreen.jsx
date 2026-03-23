@@ -97,7 +97,7 @@ const LandingScreen = ({ onSend, mode = 'fact-check', setMode }) => {
         <h1 className="landing-heading">Truth is One Query Away</h1>
         <p className="landing-subtitle">
           Verify any Fact, Text or URL —<br />
-          AlethiaAI verifies it across multiple<br />
+          Factly AI verifies it across multiple<br />
           sources instantly
         </p>
 
@@ -150,7 +150,7 @@ const LandingScreen = ({ onSend, mode = 'fact-check', setMode }) => {
                   >
                     <Image size={20} />
                     <span className="dropdown-item-text">AI Image</span>
-                    <span className="dropdown-new-badge">New</span>
+                    {/* <span className="dropdown-new-badge">New</span> */}
                     {mode === 'ai-image' && <Check size={16} />}
                   </button>
 
@@ -161,7 +161,7 @@ const LandingScreen = ({ onSend, mode = 'fact-check', setMode }) => {
                   >
                     <FileDigit size={20} />
                     <span className="dropdown-item-text">AI PDF</span>
-                    <span className="dropdown-new-badge">New</span>
+                    {/* <span className="dropdown-new-badge">New</span> */}
                     {mode === 'ai-pdf' && <Check size={16} />}
                   </button>
                 </div>

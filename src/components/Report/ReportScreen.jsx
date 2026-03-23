@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, Download, AlertTriangle, Copy, Check, Trash2 } from 'lucide-react';
+import { ArrowLeft, Download, AlertTriangle, Copy, Check, Trash2, Shield, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
 import '../../styles/reportscreen.css';
 import useReportStore from '../../store/useReportStore';
 import useAppStore from '../../store/useAppStore';
@@ -332,7 +332,7 @@ const RSClaimCard = ({ claim, index, total, style }) => {
 /* ─── REPORT SCREEN (main export) ────────────────────────────────────────── */
 const ReportScreen = ({ reportData, query, onBack }) => {
   const [isDeleting, setIsDeleting] = useState(false);
-  const apiKey = useAppStore((s) => s.apiKey) || localStorage.getItem('alethia_api_key') || '';
+  const apiKey = useAppStore((s) => s.apiKey) || localStorage.getItem('factly_api_key') || '';
 
   const score = Math.round((reportData.overall_score || 0) * 100);
   const aiProb = Math.round((reportData.ai_text_probability || 0) * 100);
@@ -344,7 +344,7 @@ const ReportScreen = ({ reportData, query, onBack }) => {
   const aiProbText = aiProb > 70 ? `High (${aiProb}%) — Likely AI Generated` : `${aiProbLabel} (${aiProb}%)`;
 
   const handleExport = () => {
-    const content = `AlethiaAI Verification Report\n` +
+    const content = `Factly AI Verification Report\n` +
       `Report ID: ${reportData.report_id || 'N/A'}\n` +
       `Date: ${timestamp}\n` +
       `Query: ${query}\n` +
@@ -354,7 +354,7 @@ const ReportScreen = ({ reportData, query, onBack }) => {
     const blob = new Blob([content], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url; a.download = `alethia-report-${reportData.report_id || Date.now()}.txt`;
+    a.href = url; a.download = `factly-report-${reportData.report_id || Date.now()}.txt`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -415,12 +415,13 @@ const ReportScreen = ({ reportData, query, onBack }) => {
         {/* KPI Row */}
         <section className="rs-kpi-row rs-slide-up" style={{ animationDelay: '0.15s' }}>
           {[
-            { label: 'Total Claims', value: reportData.total_claims || 0, cls: 'kpi-total' },
-            { label: '✓ True',       value: reportData.true_count || 0,   cls: 'kpi-t' },
-            { label: '✗ False',      value: reportData.false_count || 0,  cls: 'kpi-f' },
-            { label: '~ Partial',    value: reportData.partial_count || 0, cls: 'kpi-p' },
-          ].map(({ label, value, cls }) => (
+            { label: 'Total Claims', value: reportData.total_claims || 0, icon: <Shield size={18} />,     cls: 'kpi-total' },
+            { label: 'True',         value: reportData.true_count || 0,   icon: <CheckCircle2 size={18} />, cls: 'kpi-t' },
+            { label: 'False',        value: reportData.false_count || 0,  icon: <XCircle size={18} />,      cls: 'kpi-f' },
+            { label: 'Partial',      value: reportData.partial_count || 0, icon: <AlertCircle size={18} />,  cls: 'kpi-p' },
+          ].map(({ label, value, icon, cls }) => (
             <div key={label} className={`rs-kpi-card ${cls}`}>
+              <div className="rs-kpi-icon">{icon}</div>
               <div className="rs-kpi-value">
                 <AnimatedCounter end={value} duration={1000} />
               </div>
@@ -448,7 +449,7 @@ const ReportScreen = ({ reportData, query, onBack }) => {
 
         {/* Footer */}
         <footer className="rs-footer">
-          <div>Verified by AlethiaAI ✦</div>
+          <div>Verified by Factly AI ✦</div>
           {reportData.report_id && (
             <div className="rs-footer-id">Report ID: {reportData.report_id}</div>
           )}

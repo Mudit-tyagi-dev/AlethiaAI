@@ -30,49 +30,81 @@
 }
 
 /* ── Logo ─────────────────────────────────────────────────────────── */
-.logo {
+.topbar-logo-btn {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-family: 'Syne', sans-serif;
-  font-weight: 800;
-  font-size: 1.2rem;
-  letter-spacing: -0.5px;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
   cursor: pointer;
+  background: var(--input-bg);
+  border: 1px solid var(--card-border);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   user-select: none;
+}
+
+.topbar-logo-btn:hover {
+  background: var(--card-bg);
+  border-color: var(--accent-unverifiable);
+  box-shadow: 0 0 15px rgba(124,92,252,0.2);
+  transform: translateY(-1px);
+}
+
+.topbar-logo-btn:active {
+  transform: scale(0.95);
 }
 
 .logo-symbol {
   color: var(--accent-unverifiable);
   font-size: 1.4rem;
-  transition: all 0.2s ease;
-  animation: purpleGlowPulse 3s infinite;
+  transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-.logo-symbol-clickable:hover {
-  text-shadow: 0 0 14px rgba(124,92,252,0.7), 0 0 30px rgba(124,92,252,0.35);
-  transform: scale(1.1);
-  display: inline-block;
-}
-
-.logo-symbol-clickable.spin {
-  animation: logoClickSpin 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+.logo-symbol.spin {
+  animation: logoClickSpin 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 @keyframes logoClickSpin {
-  0%   { transform: rotate(0deg) scale(1.1); text-shadow: 0 0 14px rgba(124,92,252,0.7); }
-  50%  { transform: rotate(180deg) scale(1.3); text-shadow: 0 0 30px rgba(124,92,252,1); }
-  100% { transform: rotate(360deg) scale(1); text-shadow: 0 0 0px rgba(124,92,252,0); }
+  0%   { transform: rotate(0deg) scale(1); }
+  50%  { transform: rotate(180deg) scale(1.2); text-shadow: 0 0 20px rgba(124,92,252,0.6); }
+  100% { transform: rotate(360deg) scale(1); }
 }
 
-.logo-text {
-  color: var(--text-primary);
+/* ── Logo Text ─────────────────────────────────────────────────── */
+.logo-text-clickable {
+  cursor: pointer;
+  background: linear-gradient(135deg, #ffffff 0%, #a78bfa 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: 700;
+  font-size: 1.2rem;
   transition: all 0.2s ease;
+  user-select: none;
+  display: inline-block;
 }
 
 .logo-text-clickable:hover {
-  color: var(--accent-unverifiable);
-  text-shadow: 0 0 20px rgba(124,92,252,0.3);
+  text-shadow: 0 0 20px rgba(167, 139, 250, 0.4);
+  /* Since text-shadow is tricky with transparent fill, filter is a better option: */
+  filter: drop-shadow(0 0 8px rgba(167, 139, 250, 0.4));
+}
+
+[data-theme="light"] .logo-text-clickable {
+  background: linear-gradient(135deg, #000000 0%, #4c1d95 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+/* ── Global Page Transitions (requested from Title Click) ────────── */
+.chat-feed, .landing-container {
+  animation: pageFadeIn 0.4s ease-out;
+}
+
+@keyframes pageFadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 /* ── Buttons ──────────────────────────────────────────────────────── */
