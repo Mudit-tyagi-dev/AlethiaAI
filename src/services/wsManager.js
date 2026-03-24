@@ -94,27 +94,38 @@ const handleMessage = (data) => {
       return;
     }
 
-    const trueCount = data['true'] ?? 0;
-    const falseCount = data['false'] ?? 0;
-    const partialCount = data['partial'] ?? 0;
-    const unverifiableCount = data['unverifiable'] ?? 0;
+    // Comprehensive debug logging
+    console.log('[report_done] Full Data:', data);
+    console.log('[report_done] first claim:', data.claims?.[0]);
+
+    // Backend might use True/False or true/false for keys
+    const trueCount = data.true_count ?? data['True'] ?? data['true'] ?? 0;
+    const falseCount = data.false_count ?? data['False'] ?? data['false'] ?? 0;
+    const partialCount = data.partial_count ?? data['Partial'] ?? data['partial'] ?? 0;
+    const unverifiableCount = data.unverifiable_count ?? data['Unverifiable'] ?? data['unverifiable'] ?? 0;
+    
     const title = store.currentQuery?.substring(0, 40) || 'Report';
     const finalClaims = {};
     const finalOrder = [];
+    const existingClaims = store.claims;
+
     if (data.claims) {
       data.claims.forEach(c => {
         const claimId = c.claim_id || c.id;
+        const existing = existingClaims[claimId] || {};
+        
         finalClaims[claimId] = { 
+          ...existing,
           ...c, 
           claim_id: claimId,
+          // Ensure fields expected by UI are present and prefer report data if it exists
+          claim_text: c.claim_text || c.text || existing.claim_text || existing.text || '',
+          verdict: c.verdict || existing.verdict || 'Unverifiable',
           status: 'verified' 
         };
         finalOrder.push(claimId);
       });
     }
-
-    // Debug log to inspect backend claim structure
-    console.log('[report_done] first claim:', data.claims?.[0]);
 
     const reportObj = {
       report_id: data.report_id,
@@ -125,17 +136,24 @@ const handleMessage = (data) => {
       false_count: falseCount,
       partial_count: partialCount,
       unverifiable_count: unverifiableCount,
-      claims: (data.claims || []).map(c => ({
-        ...c,
-        claim_id: c.claim_id || c.id
-      })),
+      claims: (data.claims || []).map(c => {
+        const claimId = c.claim_id || c.id;
+        const existing = existingClaims[claimId] || {};
+        return {
+          ...existing,
+          ...c,
+          claim_id: claimId,
+          claim_text: c.claim_text || c.text || existing.claim_text || existing.text || '',
+          verdict: c.verdict || existing.verdict || 'Unverifiable'
+        };
+      }),
       date: new Date().toISOString(),
       title: title,
       query: store.currentQuery || ''
     };
 
     useWSStore.setState({
-      claims: finalClaims,
+      claims:finalClaims,
       claimOrder: finalOrder,
       finalReport: reportObj,
       isProcessing: false
