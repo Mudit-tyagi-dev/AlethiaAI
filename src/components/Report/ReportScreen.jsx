@@ -505,7 +505,7 @@ const ReportScreen = ({ reportData, query, onBack }) => {
           <footer className="rs-doc-footer-v2 rs-fade-in">
             <div className="rs-footer-line" />
             <div className="rs-footer-content-v2">
-              <span>Verified and Secured by Alethia AI & Factly Engine</span>
+              <span>Verified and Secured by Factly AI</span>
               <span>© {new Date().getFullYear()}</span>
             </div>
           </footer>

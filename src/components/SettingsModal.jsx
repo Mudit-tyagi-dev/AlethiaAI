@@ -131,7 +131,7 @@ const SettingsModal = ({ onClose, theme, toggleTheme, fontSize, setFontSize, ini
         </div>
 
         <div className="settings-footer">
-          <button className="simple-close-btn" onClick={onClose}>Close</button>
+          <button className="simple-close-btn" onClick={onClose}> Save &Close</button>
         </div>
       </div>
     </div>

@@ -173,8 +173,12 @@ const ChatThread = ({ openSettingsOnApiTab, onViewReport }) => {
               <LiveStatsCard claims={claims} claimOrder={claimOrder} query={currentQuery} />
             )}
 
-            {isVerifying && currentQueryModeRef.current === 'ai-text' && (
-              <AITextAnalyzingCard />
+            {isVerifying && (
+              currentQueryModeRef.current === 'ai-text' || 
+              currentQueryModeRef.current === 'ai-image' || 
+              currentQueryModeRef.current === 'ai-pdf'
+            ) && (
+              <AIDetectionAnalyzingCard mode={currentQueryModeRef.current} />
             )}
 
             {/* In AI Text Mode, DO NOT show claims */}
@@ -262,30 +266,56 @@ const LiveClaimCard = ({ claim, index }) => {
   return <LiveClaimCardComponent claim={claim} index={index} />;
 };
 
-// ─── AI Text Analyzing Card ──────────────────────────────────────────────────
-const AITextAnalyzingCard = () => {
+// ─── AI Detection Analyzing Card ──────────────────────────────────────────
+const AIDetectionAnalyzingCard = ({ mode }) => {
   const [msgIdx, setMsgIdx] = useState(0);
-  const messages = [
-    "Scanning writing patterns...",
-    "Checking sentence structure...",
-    "Comparing AI signatures...",
-    "Finalizing analysis..."
-  ];
+  
+  const config = {
+    'ai-text': {
+      title: '🤖 Analysing Text...',
+      messages: [
+        "Scanning writing patterns...",
+        "Checking sentence structure...",
+        "Comparing AI signatures...",
+        "Finalizing analysis..."
+      ]
+    },
+    'ai-image': {
+      title: '🖼️ Analysing Image...',
+      messages: [
+        "Scanning image pixels...",
+        "Analyzing noise patterns...",
+        "Checking metadata...",
+        "Finalizing analysis..."
+      ]
+    },
+    'ai-pdf': {
+      title: '📄 Analysing Document...',
+      messages: [
+        "Scanning PDF structure...",
+        "Extracting text layers...",
+        "Analyzing document layout...",
+        "Finalizing analysis..."
+      ]
+    }
+  };
+
+  const current = config[mode] || config['ai-text'];
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setMsgIdx(prev => (prev + 1) % messages.length);
+      setMsgIdx(prev => (prev + 1) % current.messages.length);
     }, 2000);
     return () => clearInterval(timer);
-  }, [messages.length]);
+  }, [current.messages.length]);
 
   return (
     <div className="ai-text-analyzing-card">
-      <div className="ai-analyzing-title">🤖 Analysing Text...</div>
+      <div className="ai-analyzing-title">{current.title}</div>
       <div className="ai-analyzing-shimmer-bar">
         <div className="ai-analyzing-shimmer-fill" />
       </div>
-      <div className="ai-analyzing-msg">{messages[msgIdx]}</div>
+      <div className="ai-analyzing-msg">{current.messages[msgIdx]}</div>
     </div>
   );
 };

@@ -208,7 +208,7 @@ const InputBar = ({ onSend, isProcessing, replyRequest, focusRequest, mode = 'fa
               isProcessing={isProcessing}
               onSend={(uploadedFile) => {
                 onSend(uploadedFile);
-                // Modal stays open to show loading state
+                setIsModalOpen(false);
               }} 
             />
           </>
